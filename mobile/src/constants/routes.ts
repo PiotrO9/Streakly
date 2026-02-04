@@ -1,9 +1,10 @@
-// Navigation route constants
-
+/**
+ * Navigation route name constants
+ * Use these instead of string literals for type safety
+ */
 export const ROUTES = {
-  HOME: 'Home',
-  STREAK: 'Streak',
-  SETTINGS: 'Settings',
+  DASHBOARD: 'Dashboard',
+  ADD_ADDICTION: 'AddAddiction',
 } as const;
 
 export type RouteName = (typeof ROUTES)[keyof typeof ROUTES];
