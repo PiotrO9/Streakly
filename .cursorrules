@@ -1,0 +1,35 @@
+# Streakly Project Rules
+
+## Documentation Context
+
+ALWAYS read and follow the documentation in the `docs/` directory before generating code:
+
+1. **docs/README.md** - Project overview, technologies, structure
+2. **docs/ARCHITECTURE.md** - Architecture layers, patterns, data flow
+3. **docs/DOMAIN.md** - Domain model, entities, business rules
+4. **docs/CODING_STANDARDS.md** - Naming conventions, code structure, styling
+5. **docs/AI_CONTEXT.md** - Specific AI instructions and examples
+
+## Critical Rules
+
+- Read relevant documentation files before writing code
+- Follow the Clean Architecture pattern (Domain → Data → Presentation)
+- Use TypeScript strictly (no `any`, always define types)
+- Follow offline-first approach (no API calls, SQLite only)
+- Maintain existing naming conventions and file structure
+- Check existing code patterns before creating new components
+
+## When Generating Code
+
+1. Check `docs/AI_CONTEXT.md` for examples and patterns
+2. Verify architecture compliance with `docs/ARCHITECTURE.md`
+3. Follow domain model from `docs/DOMAIN.md`
+4. Apply standards from `docs/CODING_STANDARDS.md`
+
+## Project Context
+
+- Framework: Expo ~54.0, React Native 0.81.5
+- Language: TypeScript 5.9
+- Database: SQLite (local, offline-first)
+- Architecture: Clean Architecture / DDD
+- Status: MVP in development
