@@ -11,4 +11,8 @@ export const COLORS = {
   text: '#000000',
   textSecondary: '#666666',
   border: '#E0E0E0',
+  // Addiction detail screen colors
+  addictionBackground: '#0F766E', // Dark teal background
+  addictionText: '#FFFFFF',
+  addictionCardBackground: '#FFFFFF',
 } as const;

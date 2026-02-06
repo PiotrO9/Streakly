@@ -7,6 +7,7 @@ import type { StackScreenProps } from '@react-navigation/stack';
 export type RootStackParamList = {
   Dashboard: undefined;
   AddAddiction: undefined;
+  AddictionDetail: { addictionId: string };
 };
 
 /**

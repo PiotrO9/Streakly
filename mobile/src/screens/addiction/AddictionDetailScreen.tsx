@@ -11,126 +11,109 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
-import type { RootStackNavigationProp } from '@/app/navigation/types';
+import type { RootStackScreenProps } from '@/app/navigation/types';
 import { TimeCounter } from '@/components/addiction/TimeCounter';
 import { BottomNavigation, type BottomTab } from '@/components/layout/BottomNavigation';
-import { Button } from '@/components/ui/Button';
 import { COLORS } from '@/constants/colors';
-import { ROUTES } from '@/constants/routes';
 import { DatabaseError } from '@/data/database/db';
 import { AddictionRepository } from '@/data/repositories';
 import type { Addiction } from '@/domain/models/Addiction';
 import { normalizeToDate } from '@/utils/date';
 import { calculateElapsedTimeBreakdown } from '@/utils/date';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
+
+interface AddictionDetailScreenProps extends RootStackScreenProps<'AddictionDetail'> {}
 
 /**
- * Dashboard screen - displays main view with time counter and bottom navigation
- * Shows the first addiction's time counter as the main view
+ * Addiction Detail screen - displays detailed view of a single addiction
+ * Shows real-time counter (days, hours, minutes, seconds) and bottom navigation
  */
-export function DashboardScreen() {
-  const navigation = useNavigation<RootStackNavigationProp<'Dashboard'>>();
+export function AddictionDetailScreen({ route, navigation }: AddictionDetailScreenProps) {
+  const { addictionId } = route.params;
+  console.log('[AddictionDetail] Screen loaded with addictionId:', addictionId);
   const repository = new AddictionRepository();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
-  const [addictions, setAddictions] = useState<Addiction[]>([]);
+  const [addiction, setAddiction] = useState<Addiction | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<BottomTab>('Addiction');
 
   /**
-   * Web-only: Loads addictions from localStorage
-   * Used as fallback when SQLite is not available (web platform)
-   * Converts JSON-serialized dates back to Date objects
+   * Web-only: Loads addiction from localStorage
    */
-  function loadAddictionsFromWebStorage(): Addiction[] {
+  function loadAddictionFromWebStorage(id: string): Addiction | null {
     if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
-      return [];
+      return null;
     }
 
     try {
       const stored = localStorage.getItem('streakly_addictions');
       if (!stored) {
-        return [];
+        return null;
       }
       const parsed = JSON.parse(stored);
       if (!Array.isArray(parsed)) {
-        return [];
+        return null;
       }
 
-      // Convert date strings/timestamps back to Date objects
-      return parsed.map((item) => ({
-        ...item,
-        createdAt: normalizeToDate(item.createdAt),
-        lastResetAt: normalizeToDate(item.lastResetAt),
-        archivedAt: item.archivedAt ? normalizeToDate(item.archivedAt) : undefined,
-        sync: item.sync
+      const found = parsed.find((item: Addiction) => item.id === id);
+      if (!found) {
+        return null;
+      }
+
+      return {
+        ...found,
+        createdAt: normalizeToDate(found.createdAt),
+        lastResetAt: normalizeToDate(found.lastResetAt),
+        archivedAt: found.archivedAt ? normalizeToDate(found.archivedAt) : undefined,
+        sync: found.sync
           ? {
-              ...item.sync,
-              updatedAt: normalizeToDate(item.sync.updatedAt),
-              lastSyncedAt: item.sync.lastSyncedAt
-                ? normalizeToDate(item.sync.lastSyncedAt)
+              ...found.sync,
+              updatedAt: normalizeToDate(found.sync.updatedAt),
+              lastSyncedAt: found.sync.lastSyncedAt
+                ? normalizeToDate(found.sync.lastSyncedAt)
                 : undefined,
             }
           : undefined,
-      }));
+      };
     } catch {
-      return [];
+      return null;
     }
   }
 
   /**
-   * Web-only: Updates an addiction in localStorage
-   * Used as fallback when SQLite is not available (web platform)
+   * Fetches addiction from repository
    */
-  function updateAddictionInWebStorage(updatedAddiction: Addiction): void {
-    if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
-      return;
-    }
-
-    try {
-      const stored = localStorage.getItem('streakly_addictions');
-      const existing = stored ? (JSON.parse(stored) as Addiction[]) : [];
-
-      const updatedList = existing.map((item) =>
-        item.id === updatedAddiction.id ? updatedAddiction : item
-      );
-
-      localStorage.setItem('streakly_addictions', JSON.stringify(updatedList));
-    } catch (storageError) {
-      console.error('[Dashboard] Failed to update localStorage:', storageError);
-    }
-  }
-
-  /**
-   * Fetches addictions from repository
-   * Called on initial mount and when screen comes into focus
-   * Falls back to localStorage on web platform when SQLite is unavailable
-   */
-  async function fetchAddictions(): Promise<void> {
+  async function fetchAddiction(): Promise<void> {
     setIsLoading(true);
     setError(null);
 
     try {
-      const data = await repository.findAll();
-      setAddictions(data);
+      const data = await repository.findById(addictionId);
+      if (data) {
+        setAddiction(data);
+      } else {
+        setError(new Error('Addiction not found'));
+      }
     } catch (err) {
-      // Check if error is due to web stub (SQLite not available on web)
       const isWebStubError =
         err instanceof DatabaseError &&
         err.message.includes('SQLite is not supported in this web stub');
 
       if (isWebStubError && Platform.OS === 'web') {
-        // Fallback to localStorage for web platform
-        console.log('[Dashboard] Using localStorage fallback for web platform');
-        const webData = loadAddictionsFromWebStorage();
-        setAddictions(webData);
+        const webData = loadAddictionFromWebStorage(addictionId);
+        if (webData) {
+          setAddiction(webData);
+        } else {
+          setError(new Error('Addiction not found'));
+        }
       } else {
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);
-        console.error('Failed to fetch addictions:', error);
+        console.error('Failed to fetch addiction:', error);
       }
     } finally {
       setIsLoading(false);
@@ -138,34 +121,28 @@ export function DashboardScreen() {
   }
 
   /**
-   * Updates current time and refetches data.
-   * Called when app comes to foreground or screen gains focus.
-   * Ensures streaks are recalculated with fresh time after app reload or background period.
+   * Updates current time and refetches data
    */
   function refreshDataAndTime(): void {
     setCurrentTime(new Date());
-    void fetchAddictions();
+    void fetchAddiction();
   }
 
   /**
    * Refetch data when screen comes into focus
-   * This ensures the list updates after returning from Add Addiction screen
    */
   useFocusEffect(
     useCallback(() => {
       refreshDataAndTime();
-    }, [])
+    }, [addictionId])
   );
 
   /**
    * Handle app state changes (background → foreground)
-   * Critical for correct streak calculation after app was backgrounded
-   * (e.g., app kept in background overnight)
    */
   useEffect(() => {
     function handleAppStateChange(nextAppState: AppStateStatus): void {
       if (nextAppState === 'active') {
-        // App came to foreground - recalculate streaks with fresh time
         refreshDataAndTime();
       }
     }
@@ -190,16 +167,13 @@ export function DashboardScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  function handleNavigateToAdd() {
-    navigation.navigate(ROUTES.ADD_ADDICTION);
-  }
-
   function handleTabChange(tab: BottomTab): void {
     setActiveTab(tab);
   }
 
-  // Get the first addiction to display (or null if none)
-  const activeAddiction = addictions.length > 0 ? addictions[0] : null;
+  function handleBackPress(): void {
+    navigation.goBack();
+  }
 
   if (isLoading) {
     return (
@@ -209,42 +183,31 @@ export function DashboardScreen() {
     );
   }
 
-  if (error) {
+  if (error || !addiction) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.errorText}>Failed to load addictions</Text>
-        <Button title="Retry" onPress={fetchAddictions} />
+        <Text style={styles.errorText}>Failed to load addiction</Text>
+        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  if (!activeAddiction) {
-    return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.emptyStateTitle}>No addictions tracked</Text>
-        <Text style={styles.emptyStateText}>
-          Start tracking your recovery journey by adding your first addiction.
-        </Text>
-        <Button title="Add Addiction" onPress={handleNavigateToAdd} />
-        <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} />
-      </View>
-    );
-  }
-
-  const timeBreakdown = calculateElapsedTimeBreakdown(activeAddiction.lastResetAt, currentTime);
+  const timeBreakdown = calculateElapsedTimeBreakdown(addiction.lastResetAt, currentTime);
 
   return (
     <View style={styles.container}>
       <View style={[styles.header, isDesktop && styles.headerDesktop]}>
         <TouchableOpacity
-          onPress={handleNavigateToAdd}
+          onPress={handleBackPress}
           style={styles.menuButton}
           accessibilityRole="button"
-          accessibilityLabel="Menu"
+          accessibilityLabel="Go back"
         >
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{'>'} {activeAddiction.name}</Text>
+        <Text style={styles.headerTitle}>> {addiction.name}</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -253,7 +216,7 @@ export function DashboardScreen() {
         contentContainerStyle={[styles.scrollContent, isDesktop && styles.scrollContentDesktop]}
         showsVerticalScrollIndicator={false}
       >
-        <TimeCounter breakdown={timeBreakdown} addictionName={activeAddiction.name} />
+        <TimeCounter breakdown={timeBreakdown} addictionName={addiction.name} />
       </ScrollView>
 
       <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} />
@@ -323,17 +286,15 @@ const styles = StyleSheet.create({
     color: COLORS.error,
     marginBottom: 16,
   },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: COLORS.addictionText,
-    marginBottom: 8,
-    textAlign: 'center',
+  backButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
   },
-  emptyStateText: {
+  backButtonText: {
+    color: COLORS.surface,
     fontSize: 16,
-    color: COLORS.addictionText,
-    marginBottom: 24,
-    textAlign: 'center',
+    fontWeight: '600',
   },
 });

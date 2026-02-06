@@ -5,6 +5,7 @@
 export const ROUTES = {
   DASHBOARD: 'Dashboard',
   ADD_ADDICTION: 'AddAddiction',
+  ADDICTION_DETAIL: 'AddictionDetail',
 } as const;
 
 export type RouteName = (typeof ROUTES)[keyof typeof ROUTES];

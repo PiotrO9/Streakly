@@ -78,3 +78,53 @@ export function formatElapsedTime(
 
   return diffDays === 1 ? '1 day' : `${diffDays} days`;
 }
+
+/**
+ * Calculates detailed elapsed time breakdown (days, hours, minutes, seconds).
+ * Returns an object with each time unit separately for display purposes.
+ *
+ * @param lastResetAt - The timestamp to calculate elapsed time from (Date, string, or number)
+ * @param now - The current timestamp (for testing and consistency)
+ * @returns Object with days, hours, minutes, and seconds
+ */
+export interface ElapsedTimeBreakdown {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+export function calculateElapsedTimeBreakdown(
+  lastResetAt: Date | string | number,
+  now: Date | string | number = new Date(),
+): ElapsedTimeBreakdown {
+  const lastResetDate = normalizeToDate(lastResetAt);
+  const nowDate = normalizeToDate(now);
+  const diffMs = nowDate.getTime() - lastResetDate.getTime();
+
+  if (diffMs <= 0) {
+    return {
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+    };
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  const totalHours = Math.floor(totalMinutes / 60);
+  const totalDays = Math.floor(totalHours / 24);
+
+  const seconds = totalSeconds % 60;
+  const minutes = totalMinutes % 60;
+  const hours = totalHours % 24;
+  const days = totalDays;
+
+  return {
+    days,
+    hours,
+    minutes,
+    seconds,
+  };
+}

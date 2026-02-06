@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { AddAddictionScreen } from '@/screens/addiction/AddAddictionScreen';
+import { AddictionDetailScreen } from '@/screens/addiction/AddictionDetailScreen';
 import { DashboardScreen } from '@/screens/dashboard/DashboardScreen';
 import type { StackNavigationOptions } from '@react-navigation/stack';
 
@@ -30,6 +31,13 @@ export const screens: Record<keyof RootStackParamList, ScreenConfig> = {
     component: AddAddictionScreen,
     options: {
       title: 'Add Addiction',
+    },
+  },
+  AddictionDetail: {
+    component: AddictionDetailScreen,
+    options: {
+      title: 'Addiction Detail',
+      headerShown: false,
     },
   },
 };
