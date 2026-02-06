@@ -78,14 +78,17 @@ function ProgressBar({ label, value, current, max, color, index, isDesktop }: Pr
               backgroundColor: color,
               left: `${barLeft}%`,
               width: `${barWidth}%`,
-              borderTopLeftRadius: isDesktop ? 20 : 18,
-              borderBottomLeftRadius: isDesktop ? 20 : 18,
+              borderTopLeftRadius: isDesktop ? 20 : 14,
+              borderBottomLeftRadius: isDesktop ? 20 : 14,
             },
             isDesktop && styles.progressBarDesktop,
           ]}
         >
           <View style={styles.progressBarContent}>
-            <Text style={[styles.progressBarText, isDesktop && styles.progressBarTextDesktop]}>
+            <Text 
+              selectable={false}
+              style={[styles.progressBarText, isDesktop && styles.progressBarTextDesktop]}
+            >
               {displayText}
             </Text>
           </View>
@@ -145,7 +148,12 @@ export function TimeCounter({ breakdown, addictionName }: TimeCounterProps) {
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-      <Text style={[styles.title, isDesktop && styles.titleDesktop]}>{titleText}</Text>
+      <Text 
+        selectable={false}
+        style={[styles.title, isDesktop && styles.titleDesktop]}
+      >
+        {titleText}
+      </Text>
       <View style={[styles.timeUnitsContainer, isDesktop && styles.timeUnitsContainerDesktop]}>
         {timeUnits.map((unit, index) => (
           <ProgressBar
@@ -195,7 +203,7 @@ const styles = StyleSheet.create({
   progressBarContainer: {
     width: '100%',
     marginBottom: 12,
-    paddingHorizontal: 0,
+    paddingHorizontal: 16,
   },
   progressBarContainerDesktop: {
     width: '100%',
@@ -214,7 +222,7 @@ const styles = StyleSheet.create({
   },
   progressBarWrapper: {
     width: '100%',
-    height: 80,
+    height: 60,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -229,8 +237,8 @@ const styles = StyleSheet.create({
     right: 0,
     width: '100%',
     height: '100%',
-    borderTopLeftRadius: 18,
-    borderBottomLeftRadius: 18,
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
   },
   progressBarBackgroundDesktop: {
     borderTopLeftRadius: 20,
@@ -238,12 +246,12 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: '100%',
-    paddingLeft: 24,
-    paddingRight: 50,
+    paddingLeft: 16,
+    paddingRight: 40,
     justifyContent: 'center',
     position: 'absolute',
     overflow: 'visible',
-    minWidth: 120,
+    minWidth: 100,
   },
   progressBarDesktop: {
     paddingLeft: 28,
@@ -253,7 +261,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   progressBarText: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.surface,
     fontStyle: 'italic',
