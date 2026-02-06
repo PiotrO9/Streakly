@@ -166,6 +166,14 @@ export function DashboardScreen() {
     console.log('Pressed addiction:', addiction.id);
   }
 
+  function handleResetPress(addiction: Addiction) {
+    // TODO: Implement reset logic (domain service + repository)
+    // This will call the reset domain service and persist via repository
+    console.log('Reset pressed for addiction:', addiction.id);
+    // After reset, refresh the data:
+    // void fetchAddictions();
+  }
+
   /**
    * Calculates the effective start date for streak calculation.
    * This mirrors the logic from StreakService to determine the correct start point.
@@ -229,6 +237,7 @@ export function DashboardScreen() {
         name={item.name}
         streakLabel={streakLabel}
         onPress={() => handleAddictionPress(item)}
+        onResetPress={() => handleResetPress(item)}
       />
     );
   }
