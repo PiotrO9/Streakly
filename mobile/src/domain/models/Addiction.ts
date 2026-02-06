@@ -120,6 +120,15 @@ export interface Addiction {
   /**
    * Timestamp of the most recent reset.
    * For a brand-new addiction, set `lastResetAt` to `createdAt`.
+   *
+   * Streak calculation note:
+   * - The "current streak days" is a derived value, computed as the number of
+   *   FULL elapsed 24-hour periods since `lastResetAt` (or `createdAt` when no
+   *   reset exists yet).
+   * - This is intentionally NOT a calendar-day count. It is timezone-safe and
+   *   consistent across platforms when computed from timestamps.
+   *
+   * See: `StreakService.calculateCurrentStreakDaysFromAddiction(addiction, now)`
    */
   lastResetAt: Date;
 
