@@ -18,7 +18,9 @@
 - Streak resets to 0 after relapse
 - `longestCount` updates only when `currentCount` exceeds it
 - Streak is active when `isActive === true`
-- Days counted from `startDate` to today (without breaks)
+- Days counted as **full elapsed 24-hour periods** since the streak start timestamp
+  (e.g. since `createdAt` for a new addiction, or since `lastResetAt` after a reset).
+  This is **not** a calendar-day count and is computed from timestamps to be timezone-safe.
 
 ### User
 
