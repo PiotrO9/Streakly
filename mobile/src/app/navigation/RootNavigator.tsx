@@ -1,8 +1,8 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
+import { initialRouteName, screens } from './config';
 import type { RootStackParamList } from './types';
-import { screens, initialRouteName } from './config';
 
 const Stack = createStackNavigator<RootStackParamList>();
 

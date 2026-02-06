@@ -1,9 +1,10 @@
 import React from 'react';
-import type { StackNavigationOptions } from '@react-navigation/stack';
-import type { RootStackParamList } from './types';
 
-import { DashboardScreen } from '@/screens/dashboard/DashboardScreen';
 import { AddAddictionScreen } from '@/screens/addiction/AddAddictionScreen';
+import { DashboardScreen } from '@/screens/dashboard/DashboardScreen';
+import type { StackNavigationOptions } from '@react-navigation/stack';
+
+import type { RootStackParamList } from './types';
 
 /**
  * Screen configuration

@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import type { RootStackNavigationProp } from '@/app/navigation/types';
 import { Button } from '@/components/ui/Button';
 import { COLORS } from '@/constants/colors';
+import { useNavigation } from '@react-navigation/native';
 
 export function AddAddictionScreen() {
   const navigation = useNavigation<RootStackNavigationProp<'AddAddiction'>>();
@@ -23,22 +23,22 @@ export function AddAddictionScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
     backgroundColor: COLORS.background,
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  subtitle: {
+    color: COLORS.textSecondary,
+    fontSize: 16,
+    marginBottom: 32,
+    textAlign: 'center',
   },
   title: {
+    color: COLORS.text,
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 8,
     textAlign: 'center',
-    color: COLORS.text,
-  },
-  subtitle: {
-    fontSize: 16,
-    marginBottom: 32,
-    textAlign: 'center',
-    color: COLORS.textSecondary,
   },
 });

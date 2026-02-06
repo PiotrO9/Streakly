@@ -12,3 +12,8 @@ export type {
   StreakSource,
   SyncInfo,
 } from '../models/Addiction';
+export type {
+  ResetHistoryEntry,
+  ResetHistoryId,
+  ResetHistoryMetadata,
+} from '../models/ResetHistory';

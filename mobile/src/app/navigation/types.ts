@@ -13,8 +13,10 @@ export type RootStackParamList = {
  * Navigation prop types for screens
  * Usage: type Props = StackScreenProps<RootStackParamList, 'Dashboard'>
  */
-export type RootStackScreenProps<T extends keyof RootStackParamList> =
-  StackScreenProps<RootStackParamList, T>;
+export type RootStackScreenProps<T extends keyof RootStackParamList> = StackScreenProps<
+  RootStackParamList,
+  T
+>;
 
 /**
  * Navigation hook type

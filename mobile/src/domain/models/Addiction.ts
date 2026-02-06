@@ -164,4 +164,3 @@ export interface Addiction {
  * Helper type: minimal shape needed to compute a streak.
  */
 export type StreakSource = Pick<Addiction, 'lastResetAt'>;
-
