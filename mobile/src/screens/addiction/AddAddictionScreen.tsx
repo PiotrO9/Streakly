@@ -5,6 +5,8 @@ import type { RootStackNavigationProp } from '@/app/navigation/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { COLORS } from '@/constants/colors';
+import { DatabaseError } from '@/data/database/db';
+import { AddictionRepository } from '@/data/repositories';
 import { useNavigation } from '@react-navigation/native';
 
 /**
@@ -17,19 +19,23 @@ interface AddictionFormState {
 
 /**
  * Add Addiction screen - UI skeleton for adding a new addiction
- * Minimal implementation without validation or persistence logic
+ * Handles form submission and persistence to SQLite database
  */
 export function AddAddictionScreen() {
   const navigation = useNavigation<RootStackNavigationProp<'AddAddiction'>>();
+  const repository = new AddictionRepository();
 
   // Form state management
   const [formState, setFormState] = useState<AddictionFormState>({
     name: '',
   });
 
+  // Loading state for async operations
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // Computed property: submit readiness
-  // Ready when name field has non-empty trimmed value
-  const isSubmitReady = formState.name.trim().length > 0;
+  // Ready when name field has non-empty trimmed value and not currently submitting
+  const isSubmitReady = formState.name.trim().length > 0 && !isSubmitting;
 
   /**
    * Handle input change for addiction name field
@@ -44,13 +50,45 @@ export function AddAddictionScreen() {
 
   /**
    * Handle form submission
-   * Stub implementation - no validation or persistence yet
+   * Creates Addiction domain object and persists to database
    */
-  function handleSubmit(): void {
-    // TODO: Add validation logic
-    // TODO: Add persistence logic
-    // TODO: Navigate back after successful submission
-    console.log('Submit addiction:', formState.name);
+  async function handleSubmit(): Promise<void> {
+    // Prevent double submission
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Construct domain object from form state
+      const now = new Date();
+      const addiction = await repository.create({
+        name: formState.name.trim(),
+        createdAt: now,
+        lastResetAt: now, // For new addiction, lastResetAt equals createdAt
+        longestStreakDays: 0,
+        resetCount: 0,
+        isArchived: false,
+      });
+
+      // Success - log for debugging (can be removed in production)
+      console.log('Addiction created successfully:', addiction.id);
+
+      // TODO: Navigate back after successful submission
+      // navigation.goBack();
+    } catch (error) {
+      // Handle database errors
+      if (error instanceof DatabaseError) {
+        console.error('Database error creating addiction:', error.message);
+        // TODO: Show user-friendly error message (e.g., Alert or toast)
+      } else {
+        console.error('Unexpected error creating addiction:', error);
+        // TODO: Show generic error message to user
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
