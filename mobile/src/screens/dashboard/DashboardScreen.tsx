@@ -1,14 +1,15 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import type { RootStackNavigationProp } from '@/app/navigation/types';
+import { AddictionCard } from '@/components/addiction/AddictionCard';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { COLORS } from '@/constants/colors';
 import { ROUTES } from '@/constants/routes';
 import { DatabaseError } from '@/data/database/db';
 import { AddictionRepository } from '@/data/repositories';
 import type { Addiction } from '@/domain/models/Addiction';
+import { formatElapsedTime, normalizeToDate } from '@/utils/date';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 /**
@@ -22,10 +23,12 @@ export function DashboardScreen() {
   const [addictions, setAddictions] = useState<Addiction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
   /**
    * Web-only: Loads addictions from localStorage
    * Used as fallback when SQLite is not available (web platform)
+   * Converts JSON-serialized dates back to Date objects
    */
   function loadAddictionsFromWebStorage(): Addiction[] {
     if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
@@ -38,7 +41,26 @@ export function DashboardScreen() {
         return [];
       }
       const parsed = JSON.parse(stored);
-      return Array.isArray(parsed) ? parsed : [];
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      // Convert date strings/timestamps back to Date objects
+      return parsed.map((item) => ({
+        ...item,
+        createdAt: normalizeToDate(item.createdAt),
+        lastResetAt: normalizeToDate(item.lastResetAt),
+        archivedAt: item.archivedAt ? normalizeToDate(item.archivedAt) : undefined,
+        sync: item.sync
+          ? {
+              ...item.sync,
+              updatedAt: normalizeToDate(item.sync.updatedAt),
+              lastSyncedAt: item.sync.lastSyncedAt
+                ? normalizeToDate(item.sync.lastSyncedAt)
+                : undefined,
+            }
+          : undefined,
+      }));
     } catch {
       return [];
     }
@@ -84,8 +106,21 @@ export function DashboardScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchAddictions();
+      setCurrentTime(new Date());
     }, [])
   );
+
+  /**
+   * Update current time every second to refresh elapsed time display
+   * This ensures the streak labels update in real-time (seconds → minutes → hours → days)
+   */
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000); // Update every second
+
+    return () => clearInterval(interval);
+  }, []);
 
   function handleNavigateToAdd() {
     navigation.navigate(ROUTES.ADD_ADDICTION);
@@ -97,19 +132,14 @@ export function DashboardScreen() {
   }
 
   function renderAddictionItem({ item }: { item: Addiction }) {
+    const streakLabel = formatElapsedTime(item.lastResetAt, currentTime);
+
     return (
-      <TouchableOpacity
+      <AddictionCard
+        name={item.name}
+        streakLabel={streakLabel}
         onPress={() => handleAddictionPress(item)}
-        accessibilityRole="button"
-        accessibilityLabel={`View ${item.name} addiction`}
-      >
-        <Card style={styles.addictionCard}>
-          <Text style={styles.addictionName}>{item.name}</Text>
-          <Text style={styles.addictionStreak}>
-            {item.longestStreakDays} days streak
-          </Text>
-        </Card>
-      </TouchableOpacity>
+      />
     );
   }
 
@@ -194,20 +224,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    gap: 12,
-  },
-  addictionCard: {
-    marginBottom: 12,
-  },
-  addictionName: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  addictionStreak: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
   },
   emptyState: {
     alignItems: 'center',
