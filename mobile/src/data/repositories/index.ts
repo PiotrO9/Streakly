@@ -5,3 +5,9 @@ export type {
   IAddictionRepository,
   UpdateAddictionInput,
 } from './IAddictionRepository';
+
+export { ResetHistoryRepository } from './ResetHistoryRepository';
+export type {
+  CreateResetHistoryInput,
+  IResetHistoryRepository,
+} from './IResetHistoryRepository';
