@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   AppState,
   type AppStateStatus,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,6 +23,7 @@ import { ROUTES } from '@/constants/routes';
 import { DatabaseError } from '@/data/database/db';
 import { AddictionRepository } from '@/data/repositories';
 import type { Addiction } from '@/domain/models/Addiction';
+import { StreakService } from '@/domain/services/StreakService';
 import { normalizeToDate } from '@/utils/date';
 import { calculateElapsedTimeBreakdown } from '@/utils/date';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -39,6 +43,9 @@ export function DashboardScreen() {
   const [error, setError] = useState<Error | null>(null);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<BottomTab>('Addiction');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [selectedAddictionId, setSelectedAddictionId] = useState<string | null>(null);
+  const slideAnim = useRef(new Animated.Value(-280)).current;
 
   /**
    * Web-only: Loads addictions from localStorage
@@ -198,8 +205,76 @@ export function DashboardScreen() {
     setActiveTab(tab);
   }
 
-  // Get the first addiction to display (or null if none)
-  const activeAddiction = addictions.length > 0 ? addictions[0] : null;
+  function handleMenuToggle(): void {
+    if (!isMenuOpen) {
+      setIsMenuOpen(true);
+      // Reset animation value based on current menu width
+      const menuWidthValue = isDesktop ? 320 : 280;
+      slideAnim.setValue(-menuWidthValue);
+      // Animate menu sliding in from left
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      handleMenuClose();
+    }
+  }
+
+  function handleMenuClose(): void {
+    const menuWidthValue = isDesktop ? 320 : 280;
+    // Animate menu sliding out to left
+    Animated.timing(slideAnim, {
+      toValue: -menuWidthValue,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsMenuOpen(false);
+    });
+  }
+
+  function handleAddictionSelect(addictionId: string): void {
+    setSelectedAddictionId(addictionId);
+    setIsMenuOpen(false);
+  }
+
+  function handleAddictionPress(addictionId: string): void {
+    navigation.navigate(ROUTES.ADDICTION_DETAIL, { addictionId });
+  }
+
+  /**
+   * Formats streak days as a readable label
+   * @param days - Number of streak days
+   * @returns Formatted string like "1 day" or "5 days"
+   */
+  function formatStreakDays(days: number): string {
+    if (days === 1) {
+      return '1 day';
+    }
+    return `${days} days`;
+  }
+
+  // Filter only active (non-archived) addictions
+  const activeAddictions = addictions.filter((addiction) => !addiction.isArchived);
+
+  // Get the selected addiction or the first one as default
+  const activeAddiction =
+    activeAddictions.find((addiction) => addiction.id === selectedAddictionId) ||
+    (activeAddictions.length > 0 ? activeAddictions[0] : null);
+
+  // Update selected addiction when addictions change (e.g., after adding new one)
+  useEffect(() => {
+    if (activeAddictions.length > 0) {
+      // If no selection or selected addiction is not in the list, select the first one
+      if (
+        !selectedAddictionId ||
+        !activeAddictions.find((addiction) => addiction.id === selectedAddictionId)
+      ) {
+        setSelectedAddictionId(activeAddictions[0].id);
+      }
+    }
+  }, [activeAddictions, selectedAddictionId]);
 
   if (isLoading) {
     return (
@@ -237,15 +312,22 @@ export function DashboardScreen() {
     <View style={styles.container}>
       <View style={[styles.header, isDesktop && styles.headerDesktop]}>
         <TouchableOpacity
-          onPress={handleNavigateToAdd}
+          onPress={handleMenuToggle}
           style={styles.menuButton}
           accessibilityRole="button"
-          accessibilityLabel="Menu"
+          accessibilityLabel="Open menu"
         >
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{'>'} {activeAddiction.name}</Text>
-        <View style={styles.headerRight} />
+        <TouchableOpacity
+          onPress={handleNavigateToAdd}
+          style={styles.addButton}
+          accessibilityRole="button"
+          accessibilityLabel="Add new addiction"
+        >
+          <Text style={styles.addButtonText}>+</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -253,8 +335,98 @@ export function DashboardScreen() {
         contentContainerStyle={[styles.scrollContent, isDesktop && styles.scrollContentDesktop]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Main time counter for selected addiction */}
         <TimeCounter breakdown={timeBreakdown} addictionName={activeAddiction.name} />
       </ScrollView>
+
+      {/* Burger Menu Modal */}
+      <Modal
+        visible={isMenuOpen}
+        transparent
+        animationType="none"
+        onRequestClose={handleMenuClose}
+      >
+        <View style={styles.menuOverlay}>
+          <Pressable
+            style={styles.menuOverlayBackdrop}
+            onPress={handleMenuClose}
+          />
+          <Animated.View
+            style={[
+              styles.menuContent,
+              isDesktop && styles.menuContentDesktop,
+              {
+                transform: [{ translateX: slideAnim }],
+              },
+            ]}
+          >
+            <View style={styles.menuHeader}>
+              <Text style={styles.menuTitle}>My Addictions</Text>
+              <TouchableOpacity
+                onPress={handleMenuClose}
+                style={styles.menuCloseButton}
+                accessibilityRole="button"
+                accessibilityLabel="Close menu"
+              >
+                <Text style={styles.menuCloseIcon}>×</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.menuScrollView} showsVerticalScrollIndicator={false}>
+              {activeAddictions.map((addiction) => {
+                const streakDays = StreakService.calculateCurrentStreakDaysFromAddiction(
+                  addiction,
+                  currentTime,
+                );
+                const streakLabel = formatStreakDays(streakDays);
+                const isSelected = addiction.id === selectedAddictionId;
+
+                return (
+                  <TouchableOpacity
+                    key={addiction.id}
+                    onPress={() => handleAddictionSelect(addiction.id)}
+                    style={[
+                      styles.menuItem,
+                      isSelected && styles.menuItemSelected,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Select ${addiction.name}, ${streakLabel}`}
+                  >
+                    <View style={styles.menuItemContent}>
+                      <Text
+                        style={[
+                          styles.menuItemName,
+                          isSelected && styles.menuItemNameSelected,
+                        ]}
+                      >
+                        {addiction.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.menuItemStreak,
+                          isSelected && styles.menuItemStreakSelected,
+                        ]}
+                      >
+                        {streakLabel}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+              <TouchableOpacity
+                onPress={() => {
+                  handleMenuClose();
+                  handleNavigateToAdd();
+                }}
+                style={styles.menuAddButton}
+                accessibilityRole="button"
+                accessibilityLabel="Add new addiction"
+              >
+                <Text style={styles.menuAddButtonText}>+ Add New Addiction</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </Animated.View>
+        </View>
+      </Modal>
 
       <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} />
     </View>
@@ -302,6 +474,17 @@ const styles = StyleSheet.create({
   headerRight: {
     width: 40,
   },
+  addButton: {
+    padding: 8,
+    minWidth: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButtonText: {
+    fontSize: 24,
+    color: COLORS.addictionText,
+    fontWeight: '300',
+  },
   scrollView: {
     flex: 1,
   },
@@ -313,6 +496,100 @@ const styles = StyleSheet.create({
     maxWidth: 800,
     alignSelf: 'center',
     width: '100%',
+  },
+  menuOverlay: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  menuOverlayBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  menuContent: {
+    backgroundColor: COLORS.addictionBackground,
+    width: 280,
+    height: '100%',
+    paddingTop: 16,
+    borderRadius: 0,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+  },
+  menuContentDesktop: {
+    width: 320,
+  },
+  menuHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border || 'rgba(255, 255, 255, 0.1)',
+  },
+  menuTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.addictionText,
+  },
+  menuCloseButton: {
+    padding: 8,
+    minWidth: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuCloseIcon: {
+    fontSize: 28,
+    color: COLORS.addictionText,
+    fontWeight: '300',
+    lineHeight: 28,
+  },
+  menuScrollView: {
+    maxHeight: 400,
+  },
+  menuItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border || 'rgba(255, 255, 255, 0.05)',
+  },
+  menuItemSelected: {
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  menuItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  menuItemName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.addictionText,
+    flex: 1,
+  },
+  menuItemNameSelected: {
+    fontWeight: '600',
+    color: COLORS.primary || '#3B82F6',
+  },
+  menuItemStreak: {
+    fontSize: 14,
+    color: COLORS.textSecondary || 'rgba(255, 255, 255, 0.6)',
+    marginLeft: 12,
+  },
+  menuItemStreakSelected: {
+    color: COLORS.primary || '#3B82F6',
+  },
+  menuAddButton: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: COLORS.primary || '#3B82F6',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  menuAddButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.surface || '#FFFFFF',
   },
   loadingText: {
     fontSize: 16,
