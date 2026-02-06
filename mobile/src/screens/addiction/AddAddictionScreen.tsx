@@ -1,14 +1,26 @@
-import { useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 
 import type { RootStackNavigationProp } from '@/app/navigation/types';
 import { Button } from '@/components/ui/Button';
+import { BurgerMenu } from '@/components/layout/BurgerMenu';
 import { Input } from '@/components/ui/Input';
 import { COLORS } from '@/constants/colors';
+import { ROUTES } from '@/constants/routes';
 import { DatabaseError } from '@/data/database/db';
 import { AddictionRepository } from '@/data/repositories';
 import type { Addiction } from '@/domain/models/Addiction';
-import { useNavigation } from '@react-navigation/native';
+import { normalizeToDate } from '@/utils/date';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 /**
  * Form state shape for Add Addiction screen
@@ -25,6 +37,8 @@ interface AddictionFormState {
 export function AddAddictionScreen() {
   const navigation = useNavigation<RootStackNavigationProp<'AddAddiction'>>();
   const repository = new AddictionRepository();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
 
   // Form state management
   const [formState, setFormState] = useState<AddictionFormState>({
@@ -33,6 +47,12 @@ export function AddAddictionScreen() {
 
   // Loading state for async operations
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Menu state
+  const [addictions, setAddictions] = useState<Addiction[]>([]);
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-280)).current;
 
   // Computed property: submit readiness
   // Ready when name field has non-empty trimmed value and not currently submitting
@@ -58,6 +78,103 @@ export function AddAddictionScreen() {
   }
 
   /**
+   * Web-only: Loads addictions from localStorage
+   * Used as fallback when SQLite is not available (web platform)
+   * Converts JSON-serialized dates back to Date objects
+   */
+  function loadAddictionsFromWebStorage(): Addiction[] {
+    if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
+      return [];
+    }
+
+    try {
+      const stored = localStorage.getItem('streakly_addictions');
+      if (!stored) {
+        return [];
+      }
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      // Convert date strings/timestamps back to Date objects
+      return parsed.map((item) => ({
+        ...item,
+        createdAt: normalizeToDate(item.createdAt),
+        lastResetAt: normalizeToDate(item.lastResetAt),
+        archivedAt: item.archivedAt ? normalizeToDate(item.archivedAt) : undefined,
+        sync: item.sync
+          ? {
+              ...item.sync,
+              updatedAt: normalizeToDate(item.sync.updatedAt),
+              lastSyncedAt: item.sync.lastSyncedAt
+                ? normalizeToDate(item.sync.lastSyncedAt)
+                : undefined,
+            }
+          : undefined,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Fetches addictions from repository
+   * Called on initial mount and when screen comes into focus
+   * Falls back to localStorage on web platform when SQLite is unavailable
+   */
+  async function fetchAddictions(): Promise<void> {
+    try {
+      const data = await repository.findAll();
+      setAddictions(data);
+    } catch (err) {
+      // Check if error is due to web stub (SQLite not available on web)
+      const isWebStubError =
+        err instanceof DatabaseError &&
+        err.message.includes('SQLite is not supported in this web stub');
+
+      if (isWebStubError && Platform.OS === 'web') {
+        // Fallback to localStorage for web platform
+        console.log('[AddAddiction] Using localStorage fallback for web platform');
+        const webData = loadAddictionsFromWebStorage();
+        setAddictions(webData);
+      } else {
+        console.error('Failed to fetch addictions:', err);
+      }
+    }
+  }
+
+  /**
+   * Updates current time for streak calculations
+   */
+  function refreshDataAndTime(): void {
+    setCurrentTime(new Date());
+    void fetchAddictions();
+  }
+
+  /**
+   * Refetch data when screen comes into focus
+   */
+  useFocusEffect(
+    useCallback(() => {
+      refreshDataAndTime();
+    }, [])
+  );
+
+  /**
+   * Update current time every second for real-time counter
+   */
+  useEffect(() => {
+    setCurrentTime(new Date());
+
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000); // Update every second
+
+    return () => clearInterval(interval);
+  }, []);
+
+  /**
    * Handle input change for addiction name field
    * Updates form state with new value
    */
@@ -66,6 +183,44 @@ export function AddAddictionScreen() {
       ...prev,
       name: value,
     }));
+  }
+
+  function handleMenuToggle(): void {
+    if (!isMenuOpen) {
+      setIsMenuOpen(true);
+      // Reset animation value based on current menu width
+      const menuWidthValue = isDesktop ? 320 : 280;
+      slideAnim.setValue(-menuWidthValue);
+      // Animate menu sliding in from left
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      handleMenuClose();
+    }
+  }
+
+  function handleMenuClose(): void {
+    const menuWidthValue = isDesktop ? 320 : 280;
+    // Animate menu sliding out to left
+    Animated.timing(slideAnim, {
+      toValue: -menuWidthValue,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsMenuOpen(false);
+    });
+  }
+
+  function handleAddictionSelect(addictionId: string): void {
+    handleMenuClose();
+    navigation.navigate(ROUTES.ADDICTION_DETAIL, { addictionId });
+  }
+
+  function handleNavigateToDashboard(): void {
+    navigation.navigate(ROUTES.DASHBOARD);
   }
 
   /**
@@ -135,33 +290,67 @@ export function AddAddictionScreen() {
     }
   }
 
+  // Filter only active (non-archived) addictions
+  const activeAddictions = addictions.filter((addiction) => !addiction.isArchived);
+
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Add Addiction</Text>
-        <Text style={styles.subtitle}>
-          Enter the name of the addiction you want to track
-        </Text>
+      <View style={[styles.header, isDesktop && styles.headerDesktop]}>
+        <TouchableOpacity
+          onPress={handleMenuToggle}
+          style={styles.menuButton}
+          accessibilityRole="button"
+          accessibilityLabel="Open menu"
+        >
+          <Text style={styles.menuIcon}>☰</Text>
+        </TouchableOpacity>
+        <View style={styles.headerRight} />
+      </View>
 
-        <View style={styles.form}>
-          <Input
-            label="Addiction name"
-            placeholder="e.g., Smoking, Alcohol, Social Media"
-            value={formState.name}
-            onChangeText={handleNameChange}
-            accessibilityLabel="Addiction name input"
-            autoFocus
-          />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scrollContent, isDesktop && styles.scrollContentDesktop]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
+          <Text style={styles.subtitle}>
+            Enter the name of the addiction you want to track
+          </Text>
 
-          <View style={styles.buttonContainer}>
-            <Button
-              title="Add"
-              onPress={handleSubmit}
-              disabled={!isSubmitReady}
+          <View style={styles.form}>
+            <Input
+              label="Addiction name"
+              placeholder="e.g., Smoking, Alcohol, Social Media"
+              value={formState.name}
+              onChangeText={handleNameChange}
+              accessibilityLabel="Addiction name input"
+              autoFocus
             />
+
+            <View style={styles.buttonContainer}>
+              <Button
+                title="Add"
+                onPress={handleSubmit}
+                disabled={!isSubmitReady}
+              />
+            </View>
           </View>
         </View>
-      </View>
+      </ScrollView>
+
+      {/* Burger Menu */}
+      <BurgerMenu
+        visible={isMenuOpen}
+        addictions={activeAddictions}
+        currentTime={currentTime}
+        selectedAddictionId={null}
+        slideAnim={slideAnim}
+        onClose={handleMenuClose}
+        onAddictionSelect={handleAddictionSelect}
+        onNavigateToDashboard={handleNavigateToDashboard}
+        onNavigateToAdd={undefined}
+        showAddButton={false}
+      />
     </View>
   );
 }
@@ -171,15 +360,56 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     flex: 1,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    backgroundColor: COLORS.surface,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+  headerDesktop: {
+    paddingHorizontal: 40,
+    paddingTop: 24,
+    paddingBottom: 16,
+    maxWidth: 800,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  menuButton: {
+    padding: 8,
+    marginRight: 12,
+  },
+  menuIcon: {
+    fontSize: 20,
+    color: COLORS.text,
+  },
+  headerRight: {
+    width: 40,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  scrollContentDesktop: {
+    paddingBottom: 120,
+    maxWidth: 800,
+    alignSelf: 'center',
+    width: '100%',
+  },
   content: {
     flex: 1,
     padding: 20,
-  },
-  title: {
-    color: COLORS.text,
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
   },
   subtitle: {
     color: COLORS.textSecondary,

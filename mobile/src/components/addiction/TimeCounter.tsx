@@ -41,15 +41,6 @@ function ProgressBar({ label, value, current, max, color, index, isDesktop }: Pr
 
   const darkerColor = getDarkerColor(color);
 
-  // On mobile, create layered 3D effect with slight offset
-  const offsetX = index * 4; // Horizontal offset (right) for 3D effect
-  
-  const transformStyle = isDesktop
-    ? {}
-    : {
-        transform: [{ translateX: offsetX }],
-      };
-
   const displayText = `${value} ${label}`;
 
   return (
@@ -57,7 +48,6 @@ function ProgressBar({ label, value, current, max, color, index, isDesktop }: Pr
       style={[
         styles.progressBarContainer,
         isDesktop && styles.progressBarContainerDesktop,
-        transformStyle,
         !isDesktop && styles.progressBarShadow,
       ]}
     >
@@ -185,7 +175,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    color: COLORS.surface,
+    color: COLORS.text,
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -204,11 +194,13 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 12,
     paddingHorizontal: 16,
+    alignItems: 'center',
   },
   progressBarContainerDesktop: {
     width: '100%',
     marginBottom: 12,
     paddingHorizontal: 0,
+    alignItems: 'center',
   },
   progressBarShadow: {
     shadowColor: '#000',
@@ -222,9 +214,11 @@ const styles = StyleSheet.create({
   },
   progressBarWrapper: {
     width: '100%',
+    maxWidth: 600,
     height: 60,
     position: 'relative',
     overflow: 'hidden',
+    alignSelf: 'center',
   },
   progressBarWrapperDesktop: {
     height: 90,

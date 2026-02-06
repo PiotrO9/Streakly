@@ -24,7 +24,7 @@ export const screens: Record<keyof RootStackParamList, ScreenConfig> = {
   Dashboard: {
     component: DashboardScreen,
     options: {
-      title: 'Dashboard',
+      headerShown: false,
     },
   },
   AddAddiction: {
