@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppState, type AppStateStatus, FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import type { RootStackNavigationProp } from '@/app/navigation/types';
 import { AddictionCard } from '@/components/addiction/AddictionCard';
@@ -101,15 +101,44 @@ export function DashboardScreen() {
   }
 
   /**
+   * Updates current time and refetches data.
+   * Called when app comes to foreground or screen gains focus.
+   * Ensures streaks are recalculated with fresh time after app reload or background period.
+   */
+  function refreshDataAndTime(): void {
+    setCurrentTime(new Date());
+    void fetchAddictions();
+  }
+
+  /**
    * Refetch data when screen comes into focus
    * This ensures the list updates after returning from Add Addiction screen
    */
   useFocusEffect(
     useCallback(() => {
-      fetchAddictions();
-      setCurrentTime(new Date());
+      refreshDataAndTime();
     }, [])
   );
+
+  /**
+   * Handle app state changes (background → foreground)
+   * Critical for correct streak calculation after app was backgrounded
+   * (e.g., app kept in background overnight)
+   */
+  useEffect(() => {
+    function handleAppStateChange(nextAppState: AppStateStatus): void {
+      if (nextAppState === 'active') {
+        // App came to foreground - recalculate streaks with fresh time
+        refreshDataAndTime();
+      }
+    }
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   /**
    * Update current time to refresh streak display.
