@@ -1,24 +1,91 @@
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import type { RootStackNavigationProp } from '@/app/navigation/types';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { COLORS } from '@/constants/colors';
 import { ROUTES } from '@/constants/routes';
+import { DatabaseError } from '@/data/database/db';
+import { AddictionRepository } from '@/data/repositories';
 import type { Addiction } from '@/domain/models/Addiction';
-import { useNavigation } from '@react-navigation/native';
-
-/**
- * Mock data for skeleton - will be replaced with real data later
- */
-const MOCK_ADDICTIONS: Addiction[] = [];
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 /**
  * Dashboard screen - displays list of tracked addictions
- * Skeleton implementation with placeholder data and empty state
+ * Fetches data from SQLite repository and refreshes on screen focus
  */
 export function DashboardScreen() {
   const navigation = useNavigation<RootStackNavigationProp<'Dashboard'>>();
+  const repository = new AddictionRepository();
+
+  const [addictions, setAddictions] = useState<Addiction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  /**
+   * Web-only: Loads addictions from localStorage
+   * Used as fallback when SQLite is not available (web platform)
+   */
+  function loadAddictionsFromWebStorage(): Addiction[] {
+    if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
+      return [];
+    }
+
+    try {
+      const stored = localStorage.getItem('streakly_addictions');
+      if (!stored) {
+        return [];
+      }
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Fetches addictions from repository
+   * Called on initial mount and when screen comes into focus
+   * Falls back to localStorage on web platform when SQLite is unavailable
+   */
+  async function fetchAddictions(): Promise<void> {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const data = await repository.findAll();
+      setAddictions(data);
+    } catch (err) {
+      // Check if error is due to web stub (SQLite not available on web)
+      const isWebStubError =
+        err instanceof DatabaseError &&
+        err.message.includes('SQLite is not supported in this web stub');
+
+      if (isWebStubError && Platform.OS === 'web') {
+        // Fallback to localStorage for web platform
+        console.log('[Dashboard] Using localStorage fallback for web platform');
+        const webData = loadAddictionsFromWebStorage();
+        setAddictions(webData);
+      } else {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setError(error);
+        console.error('Failed to fetch addictions:', error);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  /**
+   * Refetch data when screen comes into focus
+   * This ensures the list updates after returning from Add Addiction screen
+   */
+  useFocusEffect(
+    useCallback(() => {
+      fetchAddictions();
+    }, [])
+  );
 
   function handleNavigateToAdd() {
     navigation.navigate(ROUTES.ADD_ADDICTION);
@@ -72,11 +139,20 @@ export function DashboardScreen() {
         </TouchableOpacity>
       </View>
 
-      {MOCK_ADDICTIONS.length === 0 ? (
+      {isLoading ? (
+        <View style={styles.loadingState}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorState}>
+          <Text style={styles.errorText}>Failed to load addictions</Text>
+          <Button title="Retry" onPress={fetchAddictions} />
+        </View>
+      ) : addictions.length === 0 ? (
         renderEmptyState()
       ) : (
         <FlatList
-          data={MOCK_ADDICTIONS}
+          data={addictions}
           renderItem={renderAddictionItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
@@ -150,6 +226,28 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 16,
     marginBottom: 24,
+    textAlign: 'center',
+  },
+  loadingState: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 32,
+  },
+  loadingText: {
+    color: COLORS.textSecondary,
+    fontSize: 16,
+  },
+  errorState: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 32,
+  },
+  errorText: {
+    color: COLORS.error || COLORS.textSecondary,
+    fontSize: 16,
+    marginBottom: 16,
     textAlign: 'center',
   },
 });

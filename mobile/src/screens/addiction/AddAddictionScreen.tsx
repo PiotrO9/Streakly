@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import type { RootStackNavigationProp } from '@/app/navigation/types';
 import { Button } from '@/components/ui/Button';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { COLORS } from '@/constants/colors';
 import { DatabaseError } from '@/data/database/db';
 import { AddictionRepository } from '@/data/repositories';
+import type { Addiction } from '@/domain/models/Addiction';
 import { useNavigation } from '@react-navigation/native';
 
 /**
@@ -36,6 +37,25 @@ export function AddAddictionScreen() {
   // Computed property: submit readiness
   // Ready when name field has non-empty trimmed value and not currently submitting
   const isSubmitReady = formState.name.trim().length > 0 && !isSubmitting;
+
+  /**
+   * Web-only: Saves addiction to localStorage
+   * Used as fallback when SQLite is not available (web platform)
+   */
+  function saveAddictionToWebStorage(addiction: Addiction): void {
+    if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
+      return;
+    }
+
+    try {
+      const stored = localStorage.getItem('streakly_addictions');
+      const existing = stored ? (JSON.parse(stored) as Addiction[]) : [];
+      const updated = [...existing, addiction];
+      localStorage.setItem('streakly_addictions', JSON.stringify(updated));
+    } catch (error) {
+      console.error('Failed to save to localStorage:', error);
+    }
+  }
 
   /**
    * Handle input change for addiction name field
@@ -75,11 +95,35 @@ export function AddAddictionScreen() {
       // Success - log for debugging (can be removed in production)
       console.log('Addiction created successfully:', addiction.id);
 
-      // TODO: Navigate back after successful submission
-      // navigation.goBack();
+      // Navigate back to dashboard
+      // Dashboard will automatically refresh via useFocusEffect
+      navigation.goBack();
     } catch (error) {
-      // Handle database errors
-      if (error instanceof DatabaseError) {
+      // Handle database errors - check if it's web stub error
+      const isWebStubError =
+        error instanceof DatabaseError &&
+        error.message.includes('SQLite is not supported in this web stub');
+
+      if (isWebStubError && Platform.OS === 'web') {
+        // Fallback to localStorage for web platform
+        console.log('[AddAddiction] Using localStorage fallback for web platform');
+        const now = new Date();
+        const addiction: Addiction = {
+          id: `web-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: formState.name.trim(),
+          createdAt: now,
+          lastResetAt: now,
+          longestStreakDays: 0,
+          resetCount: 0,
+          isArchived: false,
+        };
+
+        saveAddictionToWebStorage(addiction);
+        console.log('Addiction saved to localStorage:', addiction.id);
+
+        // Navigate back to dashboard
+        navigation.goBack();
+      } else if (error instanceof DatabaseError) {
         console.error('Database error creating addiction:', error.message);
         // TODO: Show user-friendly error message (e.g., Alert or toast)
       } else {
