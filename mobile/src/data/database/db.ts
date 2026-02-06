@@ -1,5 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
+import { bootstrapDatabase, type BootstrapResult } from './bootstrap';
+
 export type AppDatabase = SQLite.SQLiteDatabase;
 
 export type SqlPrimitiveParam = string | number | boolean | null | Uint8Array;
@@ -31,20 +33,42 @@ export class DatabaseError extends Error {
 
 let databaseInstance: AppDatabase | null = null;
 let databaseInitPromise: Promise<AppDatabase> | null = null;
+let bootstrapResult: BootstrapResult | null = null;
 
 async function openDatabaseInternal(): Promise<AppDatabase> {
   if (databaseInstance) {
+    console.log('[DB] Returning existing database instance');
     return databaseInstance;
   }
 
+  console.log('[DB] Opening database connection...');
   const db = await SQLite.openDatabaseAsync('streakly.db');
+  console.log('[DB] Database connection opened');
 
   try {
     await db.execAsync('PRAGMA foreign_keys = ON;', false);
+    console.log('[DB] Foreign keys enabled');
   } catch {
     // Ignore PRAGMA failures on platforms that do not support it
+    console.log('[DB] Foreign keys not supported on this platform');
   }
 
+  // Bootstrap database: apply migrations
+  console.log('[DB] Starting bootstrap process...');
+  const result = await bootstrapDatabase(db);
+  bootstrapResult = result;
+
+  if (!result.success) {
+    console.error('[DB] Bootstrap failed:', result.error);
+    throw new DatabaseError(
+      `Database bootstrap failed: ${result.error?.message ?? 'Unknown error'}`,
+      '<bootstrap>',
+      [],
+      result.error,
+    );
+  }
+
+  console.log('[DB] Database ready. Version:', result.currentVersion);
   databaseInstance = db;
   return db;
 }
@@ -55,6 +79,14 @@ export async function initializeDatabase(): Promise<AppDatabase> {
   }
 
   return databaseInitPromise;
+}
+
+/**
+ * Gets the bootstrap result from the last initialization.
+ * Returns null if database hasn't been initialized yet.
+ */
+export function getBootstrapResult(): BootstrapResult | null {
+  return bootstrapResult;
 }
 
 export async function getDatabase(): Promise<AppDatabase> {
@@ -135,6 +167,7 @@ export async function closeDatabaseForTesting(): Promise<void> {
   await databaseInstance.closeAsync();
   databaseInstance = null;
   databaseInitPromise = null;
+  bootstrapResult = null;
 }
 
 
