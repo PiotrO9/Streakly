@@ -9,6 +9,7 @@ import { ROUTES } from '@/constants/routes';
 import { DatabaseError } from '@/data/database/db';
 import { AddictionRepository } from '@/data/repositories';
 import type { Addiction } from '@/domain/models/Addiction';
+import { StreakService } from '@/domain/services/StreakService';
 import { formatElapsedTime, normalizeToDate } from '@/utils/date';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
@@ -111,13 +112,18 @@ export function DashboardScreen() {
   );
 
   /**
-   * Update current time every second to refresh elapsed time display
-   * This ensures the streak labels update in real-time (seconds → minutes → hours → days)
+   * Update current time to refresh streak display.
+   * Updates every minute to show accurate seconds/minutes/hours for streaks < 1 day,
+   * and ensures day counts update correctly at midnight.
    */
   useEffect(() => {
+    // Update time immediately
+    setCurrentTime(new Date());
+
+    // Update every minute to keep seconds/minutes/hours accurate
     const interval = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000); // Update every second
+    }, 60 * 1000); // Every minute
 
     return () => clearInterval(interval);
   }, []);
@@ -131,8 +137,63 @@ export function DashboardScreen() {
     console.log('Pressed addiction:', addiction.id);
   }
 
+  /**
+   * Calculates the effective start date for streak calculation.
+   * This mirrors the logic from StreakService to determine the correct start point.
+   */
+  function getEffectiveStart(addiction: Addiction, now: Date): Date {
+    const createdAtTime = addiction.createdAt.getTime();
+    const nowTime = now.getTime();
+
+    if (createdAtTime > nowTime) {
+      return addiction.createdAt;
+    }
+
+    let effectiveStart: Date = addiction.createdAt;
+
+    if (addiction.lastResetAt) {
+      const lastResetTime = addiction.lastResetAt.getTime();
+
+      if (lastResetTime <= nowTime) {
+        if (lastResetTime > createdAtTime) {
+          effectiveStart = addiction.lastResetAt;
+        }
+      }
+    }
+
+    return effectiveStart;
+  }
+
+  /**
+   * Formats streak display with appropriate units.
+   * Shows seconds/minutes/hours when streak < 1 day, days when >= 1 day.
+   */
+  function formatStreakDisplay(addiction: Addiction, now: Date): string {
+    try {
+      const streakDays = StreakService.calculateCurrentStreakDaysFromAddiction(
+        addiction,
+        now
+      );
+
+      // If streak is less than 1 day, show detailed time (seconds/minutes/hours)
+      if (streakDays === 0) {
+        const effectiveStart = getEffectiveStart(addiction, now);
+        return formatElapsedTime(effectiveStart, now);
+      }
+
+      // If streak is 1+ days, show days
+      if (streakDays === 1) {
+        return '1 day';
+      }
+      return `${streakDays} days`;
+    } catch (error) {
+      console.error(`Failed to calculate streak for ${addiction.id}:`, error);
+      return '—';
+    }
+  }
+
   function renderAddictionItem({ item }: { item: Addiction }) {
-    const streakLabel = formatElapsedTime(item.lastResetAt, currentTime);
+    const streakLabel = formatStreakDisplay(item, currentTime);
 
     return (
       <AddictionCard
