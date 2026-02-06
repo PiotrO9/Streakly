@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AppState, type AppStateStatus, FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  AppState,
+  type AppStateStatus,
+  FlatList,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import type { RootStackNavigationProp } from '@/app/navigation/types';
+import { executeResetFlow } from '@/application/reset/ResetFlowExample';
 import { AddictionCard } from '@/components/addiction/AddictionCard';
 import { Button } from '@/components/ui/Button';
 import { COLORS } from '@/constants/colors';
@@ -9,6 +19,7 @@ import { ROUTES } from '@/constants/routes';
 import { DatabaseError } from '@/data/database/db';
 import { AddictionRepository } from '@/data/repositories';
 import type { Addiction } from '@/domain/models/Addiction';
+import { resetAddictionStreak } from '@/domain/services/AddictionResetService';
 import { StreakService } from '@/domain/services/StreakService';
 import { formatElapsedTime, normalizeToDate } from '@/utils/date';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -64,6 +75,29 @@ export function DashboardScreen() {
       }));
     } catch {
       return [];
+    }
+  }
+
+  /**
+   * Web-only: Updates an addiction in localStorage
+   * Used as fallback when SQLite is not available (web platform)
+   */
+  function updateAddictionInWebStorage(updatedAddiction: Addiction): void {
+    if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
+      return;
+    }
+
+    try {
+      const stored = localStorage.getItem('streakly_addictions');
+      const existing = stored ? (JSON.parse(stored) as Addiction[]) : [];
+
+      const updatedList = existing.map((item) =>
+        item.id === updatedAddiction.id ? updatedAddiction : item
+      );
+
+      localStorage.setItem('streakly_addictions', JSON.stringify(updatedList));
+    } catch (storageError) {
+      console.error('[Dashboard] Failed to update localStorage:', storageError);
     }
   }
 
@@ -166,12 +200,69 @@ export function DashboardScreen() {
     console.log('Pressed addiction:', addiction.id);
   }
 
-  function handleResetPress(addiction: Addiction) {
-    // TODO: Implement reset logic (domain service + repository)
-    // This will call the reset domain service and persist via repository
-    console.log('Reset pressed for addiction:', addiction.id);
-    // After reset, refresh the data:
-    // void fetchAddictions();
+  /**
+   * Handles reset button press for an addiction.
+   * Executes the reset flow (domain logic + persistence) and refreshes the UI.
+   *
+   * Native (iOS/Android):
+   * - Uses executeResetFlow (SQLite persistence).
+   *
+   * Web:
+   * - executeResetFlow will throw because SQLite is not supported in the web stub.
+   * - We fall back to pure domain logic + localStorage, mirroring AddAddictionScreen.
+   */
+  async function handleResetPress(addiction: Addiction): Promise<void> {
+    try {
+      await executeResetFlow(addiction, {
+        reason: 'manual',
+        note: 'User-initiated reset from dashboard',
+      });
+
+      // Success on native platforms: refresh data and update current time
+      refreshDataAndTime();
+    } catch (error) {
+      const isWebStubError =
+        error instanceof DatabaseError &&
+        error.message.includes('SQLite is not supported in this web stub');
+
+      if (isWebStubError && Platform.OS === 'web') {
+        console.log('[Dashboard] Reset fallback to localStorage for web platform');
+
+        const now = new Date();
+        const resetId = `web-reset-${Date.now()}-${Math.random()
+          .toString(36)
+          .substr(2, 9)}`;
+
+        const { updatedAddiction } = resetAddictionStreak({
+          addiction,
+          now,
+          resetId,
+          reason: 'manual',
+          note: 'User-initiated reset (web fallback)',
+        });
+
+        // Persist to localStorage (web-only) to keep data consistent across reloads
+        updateAddictionInWebStorage(updatedAddiction);
+
+        // Update local state so UI refreshes immediately
+        setCurrentTime(now);
+        setAddictions((previous) =>
+          previous.map((item) => (item.id === updatedAddiction.id ? updatedAddiction : item))
+        );
+
+        return;
+      }
+
+      // Non-web-stub errors: log and surface to UI
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('[Dashboard] Reset failed:', errorMessage, error);
+
+      setError(
+        error instanceof Error
+          ? error
+          : new Error(`Failed to reset streak: ${errorMessage}`)
+      );
+    }
   }
 
   /**
