@@ -13,6 +13,10 @@ The app uses Clean Architecture with clear layer separation:
 - `services/` - Business logic (StreakService, ValidationService)
 - `types/` - Domain types
 
+Examples:
+- `StreakService` computes derived streak days from timestamps (pure, deterministic).
+- `AddictionResetService.resetAddictionStreak(...)` performs a pure domain reset and returns updated domain objects (no persistence).
+
 **Rules**:
 - No React Native dependencies
 - Pure functions and classes

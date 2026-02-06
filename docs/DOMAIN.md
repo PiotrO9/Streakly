@@ -43,6 +43,25 @@
 - **Increment Streak**: Increase counter by 1 day
 - **Calculate Days**: Calculate days from startDate
 
+### Addiction Reset (Domain Action)
+
+**Definition**: A streak reset is a domain action/event representing the user explicitly breaking the streak at a specific moment in time.
+
+**Source of truth**:
+- The Addiction aggregate stores `lastResetAt` and `resetCount`.
+- Each reset is also captured as a `ResetHistoryEntry` for analytics and future sync.
+
+**Business rules (pure, deterministic)**:
+- Reset logic is **pure** (no persistence, no UI, no side effects).
+- The current time is passed explicitly as `now: Date` (no `Date.now()`).
+- Input objects are **not mutated**; new domain objects are returned.
+- Multiple resets within the same 24-hour window are allowed and each creates a distinct history entry (typically with `previousStreakDays === 0`).
+- Resets with `occurredAt` in the future relative to `now` are rejected.
+- Archived addictions cannot be reset.
+
+**Implementation**:
+- `mobile/src/domain/services/AddictionResetService.ts` → `resetAddictionStreak(...)`
+
 ### Validation Rules
 
 - Streak name: min 1 char, max 50 chars
