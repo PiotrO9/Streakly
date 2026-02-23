@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
-  Animated,
+  FlatList,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -11,57 +10,44 @@ import {
 } from 'react-native';
 
 import type { RootStackNavigationProp } from '@/app/navigation/types';
-import { BurgerMenu } from '@/components/layout/BurgerMenu';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { COLORS } from '@/constants/colors';
-import { ROUTES } from '@/constants/routes';
+import { FONTS } from '@/constants/fonts';
 import { DatabaseError } from '@/data/database/db';
 import { AddictionRepository } from '@/data/repositories';
 import type { Addiction } from '@/domain/models/Addiction';
-import { normalizeToDate } from '@/utils/date';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 
-/**
- * Form state shape for Add Addiction screen
- * Extensible structure ready for additional fields
- */
-interface AddictionFormState {
+interface PredefinedAddiction {
   name: string;
+  icon: string;
 }
 
-/**
- * Add Addiction screen - UI skeleton for adding a new addiction
- * Handles form submission and persistence to SQLite database
- */
+const PREDEFINED_ADDICTIONS: PredefinedAddiction[] = [
+  { name: 'Alcohol', icon: '🍺' },
+  { name: 'Smoking', icon: '🚬' },
+  { name: 'Drugs', icon: '💊' },
+  { name: 'Gambling', icon: '🎰' },
+  { name: 'Social Media', icon: '📱' },
+  { name: 'Pornography', icon: '🔞' },
+  { name: 'Sweets', icon: '🍬' },
+  { name: 'Fast Food', icon: '🍔' },
+  { name: 'Coffee', icon: '☕' },
+  { name: 'Video Games', icon: '🎮' },
+  { name: 'Shopping', icon: '🛍️' },
+  { name: 'Netflix', icon: '📺' },
+  { name: 'Energy Drinks', icon: '⚡' },
+  { name: 'Nail Biting', icon: '💅' },
+  { name: 'Procrastination', icon: '⏰' },
+];
+
 export function AddAddictionScreen() {
   const navigation = useNavigation<RootStackNavigationProp<'AddAddiction'>>();
   const repository = new AddictionRepository();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
-  // Form state management
-  const [formState, setFormState] = useState<AddictionFormState>({
-    name: '',
-  });
-
-  // Loading state for async operations
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Menu state
-  const [addictions, setAddictions] = useState<Addiction[]>([]);
-  const [currentTime, setCurrentTime] = useState<Date>(new Date());
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const slideAnim = useRef(new Animated.Value(-280)).current;
-
-  // Computed property: submit readiness
-  // Ready when name field has non-empty trimmed value and not currently submitting
-  const isSubmitReady = formState.name.trim().length > 0 && !isSubmitting;
-
-  /**
-   * Web-only: Saves addiction to localStorage
-   * Used as fallback when SQLite is not available (web platform)
-   */
   function saveAddictionToWebStorage(addiction: Addiction): void {
     if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
       return;
@@ -77,158 +63,7 @@ export function AddAddictionScreen() {
     }
   }
 
-  /**
-   * Web-only: Loads addictions from localStorage
-   * Used as fallback when SQLite is not available (web platform)
-   * Converts JSON-serialized dates back to Date objects
-   */
-  function loadAddictionsFromWebStorage(): Addiction[] {
-    if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
-      return [];
-    }
-
-    try {
-      const stored = localStorage.getItem('streakly_addictions');
-      if (!stored) {
-        return [];
-      }
-      const parsed = JSON.parse(stored);
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-
-      // Convert date strings/timestamps back to Date objects
-      return parsed.map(item => ({
-        ...item,
-        createdAt: normalizeToDate(item.createdAt),
-        lastResetAt: normalizeToDate(item.lastResetAt),
-        archivedAt: item.archivedAt ? normalizeToDate(item.archivedAt) : undefined,
-        sync: item.sync
-          ? {
-              ...item.sync,
-              updatedAt: normalizeToDate(item.sync.updatedAt),
-              lastSyncedAt: item.sync.lastSyncedAt
-                ? normalizeToDate(item.sync.lastSyncedAt)
-                : undefined,
-            }
-          : undefined,
-      }));
-    } catch {
-      return [];
-    }
-  }
-
-  /**
-   * Fetches addictions from repository
-   * Called on initial mount and when screen comes into focus
-   * Falls back to localStorage on web platform when SQLite is unavailable
-   */
-  async function fetchAddictions(): Promise<void> {
-    try {
-      const data = await repository.findAll();
-      setAddictions(data);
-    } catch (err) {
-      // Check if error is due to web stub (SQLite not available on web)
-      const isWebStubError =
-        err instanceof DatabaseError &&
-        err.message.includes('SQLite is not supported in this web stub');
-
-      if (isWebStubError && Platform.OS === 'web') {
-        // Fallback to localStorage for web platform
-        console.log('[AddAddiction] Using localStorage fallback for web platform');
-        const webData = loadAddictionsFromWebStorage();
-        setAddictions(webData);
-      } else {
-        console.error('Failed to fetch addictions:', err);
-      }
-    }
-  }
-
-  /**
-   * Updates current time for streak calculations
-   */
-  function refreshDataAndTime(): void {
-    setCurrentTime(new Date());
-    void fetchAddictions();
-  }
-
-  /**
-   * Refetch data when screen comes into focus
-   */
-  useFocusEffect(
-    useCallback(() => {
-      refreshDataAndTime();
-    }, [])
-  );
-
-  /**
-   * Update current time every second for real-time counter
-   */
-  useEffect(() => {
-    setCurrentTime(new Date());
-
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000); // Update every second
-
-    return () => clearInterval(interval);
-  }, []);
-
-  /**
-   * Handle input change for addiction name field
-   * Updates form state with new value
-   */
-  function handleNameChange(value: string): void {
-    setFormState(prev => ({
-      ...prev,
-      name: value,
-    }));
-  }
-
-  function handleMenuToggle(): void {
-    if (!isMenuOpen) {
-      setIsMenuOpen(true);
-      // Reset animation value based on current menu width
-      const menuWidthValue = isDesktop ? 320 : 280;
-      slideAnim.setValue(-menuWidthValue);
-      // Animate menu sliding in from left
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      handleMenuClose();
-    }
-  }
-
-  function handleMenuClose(): void {
-    const menuWidthValue = isDesktop ? 320 : 280;
-    // Animate menu sliding out to left
-    Animated.timing(slideAnim, {
-      toValue: -menuWidthValue,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setIsMenuOpen(false);
-    });
-  }
-
-  function handleAddictionSelect(addictionId: string): void {
-    handleMenuClose();
-    navigation.navigate(ROUTES.ADDICTION_DETAIL, { addictionId });
-  }
-
-  function handleNavigateToDashboard(): void {
-    navigation.navigate(ROUTES.DASHBOARD);
-  }
-
-  /**
-   * Handle form submission
-   * Creates Addiction domain object and persists to database
-   */
-  async function handleSubmit(): Promise<void> {
-    // Prevent double submission
+  async function handleSelectAddiction(name: string): Promise<void> {
     if (isSubmitting) {
       return;
     }
@@ -236,36 +71,29 @@ export function AddAddictionScreen() {
     setIsSubmitting(true);
 
     try {
-      // Construct domain object from form state
       const now = new Date();
       const addiction = await repository.create({
-        name: formState.name.trim(),
+        name,
         createdAt: now,
-        lastResetAt: now, // For new addiction, lastResetAt equals createdAt
+        lastResetAt: now,
         longestStreakDays: 0,
         resetCount: 0,
         isArchived: false,
       });
 
-      // Success - log for debugging (can be removed in production)
       console.log('Addiction created successfully:', addiction.id);
-
-      // Navigate back to dashboard
-      // Dashboard will automatically refresh via useFocusEffect
       navigation.goBack();
     } catch (error) {
-      // Handle database errors - check if it's web stub error
       const isWebStubError =
         error instanceof DatabaseError &&
         error.message.includes('SQLite is not supported in this web stub');
 
       if (isWebStubError && Platform.OS === 'web') {
-        // Fallback to localStorage for web platform
         console.log('[AddAddiction] Using localStorage fallback for web platform');
         const now = new Date();
         const addiction: Addiction = {
           id: `web-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          name: formState.name.trim(),
+          name,
           createdAt: now,
           lastResetAt: now,
           longestStreakDays: 0,
@@ -275,103 +103,110 @@ export function AddAddictionScreen() {
 
         saveAddictionToWebStorage(addiction);
         console.log('Addiction saved to localStorage:', addiction.id);
-
-        // Navigate back to dashboard
         navigation.goBack();
       } else if (error instanceof DatabaseError) {
         console.error('Database error creating addiction:', error.message);
-        // TODO: Show user-friendly error message (e.g., Alert or toast)
       } else {
         console.error('Unexpected error creating addiction:', error);
-        // TODO: Show generic error message to user
       }
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  // Filter only active (non-archived) addictions
-  const activeAddictions = addictions.filter(addiction => !addiction.isArchived);
+  function handleGoBack(): void {
+    navigation.goBack();
+  }
 
   return (
     <View style={styles.container}>
       <View style={[styles.headerOuter, isDesktop && styles.headerOuterDesktop]}>
         <View style={[styles.headerInner, isDesktop && styles.headerInnerDesktop]}>
           <TouchableOpacity
-            onPress={handleMenuToggle}
-            style={styles.menuButton}
+            onPress={handleGoBack}
+            style={styles.backButton}
             accessibilityRole="button"
-            accessibilityLabel="Open menu"
+            accessibilityLabel="Go back"
           >
-            <Text style={styles.menuIcon}>☰</Text>
+            <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
-          <View style={styles.headerRight} />
+          <Text style={styles.headerTitle}>Add Addiction</Text>
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, isDesktop && styles.scrollContentDesktop]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.content}>
-          <Text style={styles.subtitle}>Enter the name of the addiction you want to track</Text>
-
-          <View style={styles.form}>
-            <Input
-              label="Addiction name"
-              placeholder="e.g., Smoking, Alcohol, Social Media"
-              value={formState.name}
-              onChangeText={handleNameChange}
-              accessibilityLabel="Addiction name input"
-              autoFocus
-            />
-
-            <View style={styles.buttonContainer}>
-              <Button title="Add" onPress={handleSubmit} disabled={!isSubmitReady} />
-            </View>
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* Burger Menu */}
-      <BurgerMenu
-        visible={isMenuOpen}
-        addictions={activeAddictions}
-        currentTime={currentTime}
-        selectedAddictionId={null}
-        slideAnim={slideAnim}
-        onClose={handleMenuClose}
-        onAddictionSelect={handleAddictionSelect}
-        onNavigateToDashboard={handleNavigateToDashboard}
-        onNavigateToAdd={undefined}
-        showAddButton={false}
-      />
+      <View style={styles.listWrapper}>
+        <FlatList
+          data={PREDEFINED_ADDICTIONS}
+          keyExtractor={item => item.name}
+          style={StyleSheet.absoluteFill}
+          contentContainerStyle={[
+            styles.flatListContent,
+            isDesktop && styles.flatListContentDesktop,
+          ]}
+          showsVerticalScrollIndicator
+          ListHeaderComponent={
+            <Text style={styles.subtitle}>Choose the addiction you want to track</Text>
+          }
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[styles.addictionItem, isSubmitting && styles.addictionItemDisabled]}
+              onPress={() => handleSelectAddiction(item.name)}
+              disabled={isSubmitting}
+              accessibilityRole="button"
+              accessibilityLabel={`Add ${item.name}`}
+            >
+              <Text style={styles.addictionIcon}>{item.icon}</Text>
+              <Text style={styles.addictionName}>{item.name}</Text>
+            </TouchableOpacity>
+          )}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  buttonContainer: {
-    marginTop: 8,
+  addictionIcon: {
+    fontSize: 28,
+  },
+  addictionItem: {
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  addictionItemDisabled: {
+    opacity: 0.5,
+  },
+  addictionName: {
+    color: COLORS.text,
+    fontFamily: FONTS.medium,
+    fontSize: 16,
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 8,
+  },
+  backIcon: {
+    color: COLORS.text,
+    fontSize: 20,
   },
   container: {
     backgroundColor: COLORS.background,
     flex: 1,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  form: {
-    gap: 20,
   },
   headerInner: {
     alignItems: 'center',
     flexDirection: 'row',
     paddingBottom: 12,
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 12,
   },
   headerInnerDesktop: {
     alignSelf: 'center',
@@ -382,41 +217,43 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   headerOuter: {
-    backgroundColor: COLORS.surface,
-    elevation: 8,
+    backgroundColor: COLORS.background,
+    borderBottomColor: COLORS.border,
+    borderBottomWidth: 1,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
   },
   headerOuterDesktop: {
     width: '100%',
   },
-  headerRight: {
-    width: 40,
-  },
-  menuButton: {
-    marginRight: 12,
-    padding: 8,
-  },
-  menuIcon: {
+  headerTitle: {
     color: COLORS.text,
+    flex: 1,
+    fontFamily: FONTS.bold,
     fontSize: 20,
+    letterSpacing: 0.5,
   },
-  scrollContent: {
+  flatListContent: {
+    padding: 20,
     paddingBottom: 100,
   },
-  scrollContentDesktop: {
+  flatListContentDesktop: {
     alignSelf: 'center',
     maxWidth: 800,
     paddingBottom: 120,
     width: '100%',
   },
-  scrollView: {
+  listWrapper: {
     flex: 1,
+  },
+  separator: {
+    height: 10,
   },
   subtitle: {
     color: COLORS.textSecondary,

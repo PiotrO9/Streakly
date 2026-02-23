@@ -69,13 +69,13 @@ export default function App() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Inicjalizacja bazy danych...</Text>
+        <Text style={styles.loadingText}>Initializing database...</Text>
         {databaseError && (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorTitle}>Błąd inicjalizacji</Text>
+            <Text style={styles.errorTitle}>Initialization Error</Text>
             <Text style={styles.errorMessage}>{databaseError.message}</Text>
             <Text style={styles.errorHint}>
-              Sprawdź konsolę dla szczegółów. Aplikacja może nie działać poprawnie.
+              Check the console for details. The app may not work correctly.
             </Text>
           </View>
         )}

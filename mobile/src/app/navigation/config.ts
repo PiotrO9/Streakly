@@ -30,7 +30,7 @@ export const screens: Record<keyof RootStackParamList, ScreenConfig> = {
   AddAddiction: {
     component: AddAddictionScreen,
     options: {
-      title: 'Add Addiction',
+      headerShown: false,
     },
   },
   AddictionDetail: {

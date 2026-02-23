@@ -64,7 +64,9 @@ function ProgressBar({ label, value, current, max, color, index, isDesktop }: Pr
               left: `${barLeft}%`,
               width: `${barWidth}%`,
               borderTopLeftRadius: isDesktop ? 20 : 14,
+              borderTopRightRadius: isDesktop ? 20 : 14,
               borderBottomLeftRadius: isDesktop ? 20 : 14,
+              borderBottomRightRadius: isDesktop ? 20 : 14,
             },
             isDesktop && styles.progressBarDesktop,
           ]}
@@ -76,10 +78,6 @@ function ProgressBar({ label, value, current, max, color, index, isDesktop }: Pr
             >
               {displayText}
             </Text>
-          </View>
-          {/* Diagonal cut effect on the right side */}
-          <View style={styles.diagonalCut}>
-            <View style={[styles.diagonalCutInner, { backgroundColor: color }]} />
           </View>
         </View>
       </View>
@@ -175,6 +173,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   diagonalCutInner: {
+    borderBottomRightRadius: 14,
+    borderTopRightRadius: 14,
     position: 'absolute',
     right: 0,
     top: 0,
@@ -195,7 +195,9 @@ const styles = StyleSheet.create({
   },
   progressBarBackground: {
     borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
     borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
     bottom: 0,
     height: '100%',
     left: 0,
@@ -206,7 +208,9 @@ const styles = StyleSheet.create({
   },
   progressBarBackgroundDesktop: {
     borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   progressBarContainer: {
     alignItems: 'center',
