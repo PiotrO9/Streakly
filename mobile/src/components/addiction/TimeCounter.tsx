@@ -44,13 +44,12 @@ function ProgressBar({ label, value, current, max, color, index, isDesktop }: Pr
   const displayText = `${value} ${label}`;
 
   return (
-    <View
-      style={[
-        styles.progressBarContainer,
-        isDesktop && styles.progressBarContainerDesktop,
-        !isDesktop && styles.progressBarShadow,
-      ]}
-    >
+      <View
+        style={[
+          styles.progressBarContainer,
+          isDesktop && styles.progressBarContainerDesktop,
+        ]}
+      >
       <View style={[styles.progressBarWrapper, isDesktop && styles.progressBarWrapperDesktop]}>
         {/* Background (unfilled portion) */}
         <View
@@ -201,16 +200,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 0,
     alignItems: 'center',
-  },
-  progressBarShadow: {
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 2,
-      height: 4,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 10,
   },
   progressBarWrapper: {
     width: '100%',
