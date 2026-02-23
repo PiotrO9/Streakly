@@ -48,6 +48,7 @@ await repository.delete(addiction.id);
 Creates a new Addiction entity. The `id` is automatically generated.
 
 **Input:**
+
 - `name: string` - Display name (required)
 - `createdAt: Date` - Creation timestamp (required)
 - `lastResetAt: Date` - Last reset timestamp (required)
@@ -61,6 +62,7 @@ Creates a new Addiction entity. The `id` is automatically generated.
 **Throws:** `DatabaseError` if creation fails
 
 **Example:**
+
 ```typescript
 const addiction = await repository.create({
   name: 'Alcohol',
@@ -76,6 +78,7 @@ const addiction = await repository.create({
 Retrieves an Addiction by its unique identifier.
 
 **Parameters:**
+
 - `id: string` - Unique identifier
 
 **Returns:** Addiction entity or `null` if not found
@@ -83,6 +86,7 @@ Retrieves an Addiction by its unique identifier.
 **Throws:** `DatabaseError` if query fails
 
 **Example:**
+
 ```typescript
 const addiction = await repository.findById('abc-123-def');
 if (addiction) {
@@ -99,6 +103,7 @@ Retrieves all Addiction entities, ordered by creation date (newest first).
 **Throws:** `DatabaseError` if query fails
 
 **Example:**
+
 ```typescript
 const addictions = await repository.findAll();
 addictions.forEach(a => console.log(a.name));
@@ -109,6 +114,7 @@ addictions.forEach(a => console.log(a.name));
 Updates an existing Addiction entity. Only provided fields are updated (partial update).
 
 **Parameters:**
+
 - `id: string` - Unique identifier
 - `input: UpdateAddictionInput` - Partial update data
 
@@ -117,6 +123,7 @@ Updates an existing Addiction entity. Only provided fields are updated (partial 
 **Throws:** `DatabaseError` if update fails or entity not found
 
 **Example:**
+
 ```typescript
 const updated = await repository.update('abc-123-def', {
   name: 'Updated Name',
@@ -129,11 +136,13 @@ const updated = await repository.update('abc-123-def', {
 Deletes an Addiction entity by id.
 
 **Parameters:**
+
 - `id: string` - Unique identifier
 
 **Throws:** `DatabaseError` if deletion fails or entity not found
 
 **Example:**
+
 ```typescript
 await repository.delete('abc-123-def');
 ```
@@ -141,35 +150,40 @@ await repository.delete('abc-123-def');
 ## SQL Queries Used
 
 ### Create
+
 ```sql
 INSERT INTO addictions (id, name, created_at, last_reset_at)
 VALUES (?, ?, ?, ?)
 ```
 
 ### Find By ID
+
 ```sql
-SELECT id, name, created_at, last_reset_at 
-FROM addictions 
+SELECT id, name, created_at, last_reset_at
+FROM addictions
 WHERE id = ?
 ```
 
 ### Find All
+
 ```sql
-SELECT id, name, created_at, last_reset_at 
-FROM addictions 
+SELECT id, name, created_at, last_reset_at
+FROM addictions
 ORDER BY created_at DESC
 ```
 
 ### Update
+
 ```sql
-UPDATE addictions 
-SET name = ?, last_reset_at = ? 
+UPDATE addictions
+SET name = ?, last_reset_at = ?
 WHERE id = ?
 ```
 
 ### Delete
+
 ```sql
-DELETE FROM addictions 
+DELETE FROM addictions
 WHERE id = ?
 ```
 
@@ -184,6 +198,7 @@ The repository maps SQLite INTEGER timestamps to JavaScript `Date` objects:
   - If `null` in DB, uses `createdAt` as fallback
 
 Fields not yet in schema are set to defaults:
+
 - `longestStreakDays: 0`
 - `resetCount: 0`
 - `isArchived: false`
@@ -218,12 +233,14 @@ try {
 ## Current Schema Limitations
 
 The current migration (001) only stores:
+
 - `id` (TEXT)
 - `name` (TEXT)
 - `created_at` (INTEGER)
 - `last_reset_at` (INTEGER, nullable)
 
 **Missing fields** (not yet persisted):
+
 - `longestStreakDays`
 - `resetCount`
 - `isArchived`
@@ -266,6 +283,7 @@ async archive(id: AddictionId): Promise<void> {
 ### Sync Support
 
 When adding backend sync:
+
 1. Add `sync` columns to schema
 2. Update mapping logic
 3. Add `findUnsynced()` method
@@ -279,7 +297,7 @@ Repositories are used by domain services, not directly by UI:
 // ✅ Good: Service uses Repository
 class AddictionService {
   constructor(private repo: IAddictionRepository) {}
-  
+
   async createAddiction(name: string): Promise<Addiction> {
     const now = new Date();
     return this.repo.create({
@@ -300,24 +318,26 @@ function MyScreen() {
 ## Testing
 
 For testing, you can:
+
 1. Use an in-memory SQLite database
 2. Mock `IAddictionRepository` interface
 3. Use dependency injection
 
 Example test setup:
+
 ```typescript
 import { IAddictionRepository } from '@/data/repositories';
 
 class MockAddictionRepository implements IAddictionRepository {
   private data: Map<string, Addiction> = new Map();
-  
+
   async create(input: CreateAddictionInput): Promise<Addiction> {
     const id = 'test-id';
     const addiction = { id, ...input };
     this.data.set(id, addiction);
     return addiction;
   }
-  
+
   // ... implement other methods
 }
 ```

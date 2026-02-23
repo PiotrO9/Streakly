@@ -29,25 +29,27 @@ All mapper functions live in `mobile/src/data/mappers/`:
 Converts a SQLite row to a domain `Addiction` entity.
 
 **Input Example:**
+
 ```typescript
 const row: AddictionRow = {
   id: 'abc-123',
   name: 'Smoking',
-  created_at: 1705315800000,        // INTEGER milliseconds
-  last_reset_at: 1705315800000,      // INTEGER milliseconds (nullable)
+  created_at: 1705315800000, // INTEGER milliseconds
+  last_reset_at: 1705315800000, // INTEGER milliseconds (nullable)
 };
 ```
 
 **Output Example:**
+
 ```typescript
 const addiction: Addiction = {
   id: 'abc-123',
   name: 'Smoking',
   createdAt: Date('2024-01-15T10:30:00Z'),
   lastResetAt: Date('2024-01-15T10:30:00Z'),
-  longestStreakDays: 0,              // Default (not in schema yet)
-  resetCount: 0,                     // Default (not in schema yet)
-  isArchived: false,                 // Default (not in schema yet)
+  longestStreakDays: 0, // Default (not in schema yet)
+  resetCount: 0, // Default (not in schema yet)
+  isArchived: false, // Default (not in schema yet)
   archivedAt: undefined,
   resetHistory: undefined,
   metadata: undefined,
@@ -56,6 +58,7 @@ const addiction: Addiction = {
 ```
 
 **Handles:**
+
 - ✅ Timestamp conversion (INTEGER → Date)
 - ✅ Nullable `last_reset_at` (uses `createdAt` if null)
 - ✅ Default values for fields not in schema
@@ -65,6 +68,7 @@ const addiction: Addiction = {
 Converts a domain `Addiction` to SQLite INSERT/UPDATE values.
 
 **Input Example:**
+
 ```typescript
 const addiction = {
   id: 'abc-123',
@@ -76,16 +80,18 @@ const addiction = {
 ```
 
 **Output Example:**
+
 ```typescript
 const values: AddictionRowValues = [
-  'abc-123',           // id
-  'Smoking',            // name
-  1705315800000,        // created_at (INTEGER)
-  1705315800000,        // last_reset_at (INTEGER)
+  'abc-123', // id
+  'Smoking', // name
+  1705315800000, // created_at (INTEGER)
+  1705315800000, // last_reset_at (INTEGER)
 ];
 ```
 
 **Handles:**
+
 - ✅ Timestamp conversion (Date → INTEGER)
 - ✅ Only includes fields in current schema
 
@@ -96,24 +102,26 @@ const values: AddictionRowValues = [
 Converts a SQLite row to a domain `ResetHistoryEntry` entity.
 
 **Input Example:**
+
 ```typescript
 const row: ResetHistoryRow = {
   id: 'reset-123',
   addiction_id: 'abc-123',
-  reset_at: 1705315800000,           // INTEGER milliseconds
+  reset_at: 1705315800000, // INTEGER milliseconds
 };
 ```
 
 **Output Example:**
+
 ```typescript
 const entry: ResetHistoryEntry = {
   id: 'reset-123',
   addictionId: 'abc-123',
   occurredAt: Date('2024-01-15T10:30:00Z'),
-  recordedAt: Date('2024-01-15T10:30:00Z'),  // MVP: same as occurredAt
-  reason: 'unknown',                  // Default (not in schema yet)
-  previousStreakDays: 0,              // Default (not in schema yet)
-  newStreakDays: 0,                   // Default (not in schema yet)
+  recordedAt: Date('2024-01-15T10:30:00Z'), // MVP: same as occurredAt
+  reason: 'unknown', // Default (not in schema yet)
+  previousStreakDays: 0, // Default (not in schema yet)
+  newStreakDays: 0, // Default (not in schema yet)
   note: undefined,
   metadata: undefined,
   sync: undefined,
@@ -121,6 +129,7 @@ const entry: ResetHistoryEntry = {
 ```
 
 **Handles:**
+
 - ✅ Timestamp conversion (INTEGER → Date)
 - ✅ MVP limitation: `recordedAt` uses same timestamp as `occurredAt`
 - ✅ Default values for fields not in schema
@@ -130,6 +139,7 @@ const entry: ResetHistoryEntry = {
 Converts a domain `ResetHistoryEntry` to SQLite INSERT values.
 
 **Input Example:**
+
 ```typescript
 const entry = {
   id: 'reset-123',
@@ -140,15 +150,17 @@ const entry = {
 ```
 
 **Output Example:**
+
 ```typescript
 const values: ResetHistoryRowValues = [
-  'reset-123',         // id
-  'abc-123',           // addiction_id
-  1705315800000,       // reset_at (INTEGER)
+  'reset-123', // id
+  'abc-123', // addiction_id
+  1705315800000, // reset_at (INTEGER)
 ];
 ```
 
 **Handles:**
+
 - ✅ Timestamp conversion (Date → INTEGER)
 - ✅ Only includes fields in current schema
 
@@ -166,11 +178,11 @@ Both mappers include helper functions:
 
 ```typescript
 // Date → INTEGER milliseconds
-dateToTimestamp(new Date('2024-01-15T10:30:00Z'))
+dateToTimestamp(new Date('2024-01-15T10:30:00Z'));
 // Returns: 1705315800000
 
 // INTEGER milliseconds → Date
-timestampToDate(1705315800000)
+timestampToDate(1705315800000);
 // Returns: Date('2024-01-15T10:30:00Z')
 ```
 
@@ -183,9 +195,7 @@ timestampToDate(1705315800000)
 - **Mapping**: If `null` in DB, use `createdAt` (new addiction, no resets)
 
 ```typescript
-const lastResetAt = row.last_reset_at
-  ? timestampToDate(row.last_reset_at)
-  : createdAt;
+const lastResetAt = row.last_reset_at ? timestampToDate(row.last_reset_at) : createdAt;
 ```
 
 ### ResetHistory: All fields required
@@ -198,12 +208,14 @@ const lastResetAt = row.last_reset_at
 ### Current Schema (MVP)
 
 **addictions table:**
+
 - `id` (TEXT PRIMARY KEY)
 - `name` (TEXT)
 - `created_at` (INTEGER)
 - `last_reset_at` (INTEGER nullable)
 
 **reset_history table:**
+
 - `id` (TEXT PRIMARY KEY)
 - `addiction_id` (TEXT)
 - `reset_at` (INTEGER)
@@ -217,6 +229,7 @@ When adding new columns, update:
 3. **SQL queries** in repositories
 
 **Example Future Schema:**
+
 ```sql
 ALTER TABLE addictions ADD COLUMN longest_streak_days INTEGER DEFAULT 0;
 ALTER TABLE addictions ADD COLUMN reset_count INTEGER DEFAULT 0;
@@ -235,7 +248,7 @@ ALTER TABLE reset_history ADD COLUMN note TEXT;
 Repositories use mappers to convert between SQLite and domain:
 
 ```typescript
-import { rowToDomain, domainToRowValues } from '@/data/mappers';
+import { domainToRowValues, rowToDomain } from '@/data/mappers';
 
 // In repository query:
 const row = await executeQueryOne<AddictionRow>(sql, params);

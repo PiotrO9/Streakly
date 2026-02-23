@@ -1,6 +1,6 @@
 // Mapper functions for converting between ResetHistoryEntry domain models and SQLite rows
-import type { ResetHistoryEntry } from '@/domain/models/ResetHistory';
 import type { AddictionId } from '@/domain/models/Addiction';
+import type { ResetHistoryEntry } from '@/domain/models/ResetHistory';
 
 /**
  * Database row representation of a ResetHistoryEntry.
@@ -144,9 +144,5 @@ export function domainToRowValues(input: {
   addictionId: AddictionId;
   occurredAt: Date;
 }): ResetHistoryRowValues {
-  return [
-    input.id,
-    input.addictionId,
-    dateToTimestamp(input.occurredAt),
-  ];
+  return [input.id, input.addictionId, dateToTimestamp(input.occurredAt)];
 }

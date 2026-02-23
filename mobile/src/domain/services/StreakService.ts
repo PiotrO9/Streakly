@@ -1,6 +1,6 @@
 // Business logic for Streak operations
-import type { Streak } from '../models/Streak';
 import type { Addiction } from '../models/Addiction';
+import type { Streak } from '../models/Streak';
 
 /**
  * Number of milliseconds in a full 24-hour day.

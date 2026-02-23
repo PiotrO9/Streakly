@@ -15,7 +15,7 @@ export type AppDatabase = {
 
 export type SqlPrimitiveParam = string | number | boolean | null | Uint8Array;
 
-export type SqlQueryParams = ReadonlyArray<SqlPrimitiveParam>;
+export type SqlQueryParams = readonly SqlPrimitiveParam[];
 
 export interface SqlRunResult {
   changes: number;
@@ -103,34 +103,31 @@ function createWebOnlyError(sql: string): DatabaseError {
   return new DatabaseError(
     'SQLite is not supported in this web stub implementation. Use a native platform for persistence.',
     sql,
-    [],
+    []
   );
 }
 
-export async function executeRun(
-  sql: string,
-  params: SqlQueryParams = [],
-): Promise<SqlRunResult> {
+export async function executeRun(sql: string, params: SqlQueryParams = []): Promise<SqlRunResult> {
   throw createWebOnlyError(sql);
 }
 
 export async function executeQuery<T>(
   sql: string,
-  params: SqlQueryParams = [],
+  params: SqlQueryParams = []
 ): Promise<SqlQueryResult<T>> {
   throw createWebOnlyError(sql);
 }
 
 export async function executeQueryOne<T>(
   sql: string,
-  params: SqlQueryParams = [],
+  params: SqlQueryParams = []
 ): Promise<T | null> {
   throw createWebOnlyError(sql);
 }
 
 export async function executeTransaction<T>(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  callback: (tx: AppDatabase) => Promise<T>,
+  callback: (tx: AppDatabase) => Promise<T>
 ): Promise<T> {
   throw createWebOnlyError('<transaction>');
 }
@@ -140,4 +137,3 @@ export async function closeDatabaseForTesting(): Promise<void> {
   databaseInitPromise = null;
   bootstrapResult = null;
 }
-

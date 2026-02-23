@@ -1,9 +1,9 @@
-import type { Addiction } from '@/domain/models/Addiction';
+import { DatabaseError } from '@/data/database/db';
 import type {
   IAddictionRepository,
   UpdateAddictionInput,
 } from '@/data/repositories/IAddictionRepository';
-import { DatabaseError } from '@/data/database/db';
+import type { Addiction } from '@/domain/models/Addiction';
 
 export interface PersistAddictionUpdateDependencies {
   addictionRepository: IAddictionRepository;
@@ -30,17 +30,14 @@ export interface PersistAddictionUpdateDependencies {
  */
 export async function persistAddictionUpdate(
   updatedAddiction: Addiction,
-  dependencies: PersistAddictionUpdateDependencies,
+  dependencies: PersistAddictionUpdateDependencies
 ): Promise<Addiction> {
   const { addictionRepository, logError } = dependencies;
 
   const updateInput: UpdateAddictionInput = mapAddictionToUpdateInput(updatedAddiction);
 
   try {
-    const persistedAddiction = await addictionRepository.update(
-      updatedAddiction.id,
-      updateInput,
-    );
+    const persistedAddiction = await addictionRepository.update(updatedAddiction.id, updateInput);
 
     return persistedAddiction;
   } catch (error) {
@@ -63,7 +60,7 @@ export async function persistAddictionUpdate(
       'Unexpected error while persisting Addiction update',
       undefined,
       undefined,
-      error,
+      error
     );
   }
 }

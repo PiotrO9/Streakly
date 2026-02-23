@@ -1,5 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
+import { FONTS } from '@/constants/fonts';
+
 interface ButtonProps {
   title: string;
   onPress: () => void;
@@ -32,7 +34,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#FFFFFF',
+    fontFamily: FONTS.semiBold,
     fontSize: 16,
-    fontWeight: '600',
   },
 });

@@ -1,12 +1,12 @@
 import * as SQLite from 'expo-sqlite';
 
-import { bootstrapDatabase, type BootstrapResult } from './bootstrap';
+import { type BootstrapResult, bootstrapDatabase } from './bootstrap';
 
 export type AppDatabase = SQLite.SQLiteDatabase;
 
 export type SqlPrimitiveParam = string | number | boolean | null | Uint8Array;
 
-export type SqlQueryParams = ReadonlyArray<SqlPrimitiveParam>;
+export type SqlQueryParams = readonly SqlPrimitiveParam[];
 
 export interface SqlRunResult {
   changes: number;
@@ -64,7 +64,7 @@ async function openDatabaseInternal(): Promise<AppDatabase> {
       `Database bootstrap failed: ${result.error?.message ?? 'Unknown error'}`,
       '<bootstrap>',
       [],
-      result.error,
+      result.error
     );
   }
 
@@ -97,10 +97,7 @@ export async function getDatabase(): Promise<AppDatabase> {
   return initializeDatabase();
 }
 
-export async function executeRun(
-  sql: string,
-  params: SqlQueryParams = [],
-): Promise<SqlRunResult> {
+export async function executeRun(sql: string, params: SqlQueryParams = []): Promise<SqlRunResult> {
   const db = await getDatabase();
 
   try {
@@ -117,7 +114,7 @@ export async function executeRun(
 
 export async function executeQuery<T>(
   sql: string,
-  params: SqlQueryParams = [],
+  params: SqlQueryParams = []
 ): Promise<SqlQueryResult<T>> {
   const db = await getDatabase();
 
@@ -131,7 +128,7 @@ export async function executeQuery<T>(
 
 export async function executeQueryOne<T>(
   sql: string,
-  params: SqlQueryParams = [],
+  params: SqlQueryParams = []
 ): Promise<T | null> {
   const db = await getDatabase();
 
@@ -143,13 +140,11 @@ export async function executeQueryOne<T>(
   }
 }
 
-export async function executeTransaction<T>(
-  callback: (tx: AppDatabase) => Promise<T>,
-): Promise<T> {
+export async function executeTransaction<T>(callback: (tx: AppDatabase) => Promise<T>): Promise<T> {
   const db = await getDatabase();
 
   try {
-    const result = await db.withTransactionAsync(async (tx) => {
+    const result = await db.withTransactionAsync(async tx => {
       return callback(tx);
     });
 
@@ -169,5 +164,3 @@ export async function closeDatabaseForTesting(): Promise<void> {
   databaseInitPromise = null;
   bootstrapResult = null;
 }
-
-

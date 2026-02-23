@@ -7,7 +7,4 @@ export type {
 } from './IAddictionRepository';
 
 export { ResetHistoryRepository } from './ResetHistoryRepository';
-export type {
-  CreateResetHistoryInput,
-  IResetHistoryRepository,
-} from './IResetHistoryRepository';
+export type { CreateResetHistoryInput, IResetHistoryRepository } from './IResetHistoryRepository';

@@ -46,6 +46,7 @@ const allResets = await repository.findAll();
 Creates a new ResetHistoryEntry. The `id` is automatically generated.
 
 **Input:**
+
 - `addictionId: AddictionId` - Reference to the addiction (required)
 - `occurredAt: Date` - When the reset actually happened (required)
 - `recordedAt: Date` - When the reset was recorded in the app (required)
@@ -59,6 +60,7 @@ Creates a new ResetHistoryEntry. The `id` is automatically generated.
 **Throws:** `DatabaseError` if creation fails
 
 **Example:**
+
 ```typescript
 const entry = await repository.create({
   addictionId: 'smoking-001',
@@ -76,6 +78,7 @@ const entry = await repository.create({
 Retrieves a ResetHistoryEntry by its unique identifier.
 
 **Parameters:**
+
 - `id: string` - Unique identifier
 
 **Returns:** ResetHistoryEntry entity or `null` if not found
@@ -83,6 +86,7 @@ Retrieves a ResetHistoryEntry by its unique identifier.
 **Throws:** `DatabaseError` if query fails
 
 **Example:**
+
 ```typescript
 const entry = await repository.findById('reset-123');
 if (entry) {
@@ -95,6 +99,7 @@ if (entry) {
 Retrieves all ResetHistoryEntry entities for a specific addiction, ordered by `occurredAt` descending (most recent first).
 
 **Parameters:**
+
 - `addictionId: string` - The addiction identifier
 
 **Returns:** Array of ResetHistoryEntry entities (empty array if none exist)
@@ -102,10 +107,11 @@ Retrieves all ResetHistoryEntry entities for a specific addiction, ordered by `o
 **Throws:** `DatabaseError` if query fails
 
 **Example:**
+
 ```typescript
 const history = await repository.findByAddictionId('smoking-001');
 console.log(`Total resets: ${history.length}`);
-history.forEach((entry) => {
+history.forEach(entry => {
   console.log(`${entry.occurredAt}: ${entry.reason}`);
 });
 ```
@@ -119,6 +125,7 @@ Retrieves all ResetHistoryEntry entities across all addictions, ordered by `occu
 **Throws:** `DatabaseError` if query fails
 
 **Example:**
+
 ```typescript
 const allResets = await repository.findAll();
 console.log(`Total resets across all addictions: ${allResets.length}`);
@@ -127,30 +134,34 @@ console.log(`Total resets across all addictions: ${allResets.length}`);
 ## SQL Queries Used
 
 ### Create
+
 ```sql
 INSERT INTO reset_history (id, addiction_id, reset_at)
 VALUES (?, ?, ?)
 ```
 
 ### Find by ID
+
 ```sql
-SELECT id, addiction_id, reset_at 
-FROM reset_history 
+SELECT id, addiction_id, reset_at
+FROM reset_history
 WHERE id = ?
 ```
 
 ### Find by Addiction ID
+
 ```sql
-SELECT id, addiction_id, reset_at 
-FROM reset_history 
-WHERE addiction_id = ? 
+SELECT id, addiction_id, reset_at
+FROM reset_history
+WHERE addiction_id = ?
 ORDER BY reset_at DESC
 ```
 
 ### Find All
+
 ```sql
-SELECT id, addiction_id, reset_at 
-FROM reset_history 
+SELECT id, addiction_id, reset_at
+FROM reset_history
 ORDER BY reset_at DESC
 ```
 
@@ -180,11 +191,13 @@ For INSERT operations:
 ## Schema Limitations (MVP)
 
 The current migration (002) only stores:
+
 - `id` (TEXT PRIMARY KEY)
 - `addiction_id` (TEXT)
 - `reset_at` (INTEGER - Unix timestamp in milliseconds)
 
 The domain model includes additional fields that are not yet persisted:
+
 - `recordedAt` - Currently uses same value as `occurredAt`
 - `reason` - Defaults to 'unknown' when reading from DB
 - `previousStreakDays` - Defaults to 0 when reading from DB
@@ -194,6 +207,7 @@ The domain model includes additional fields that are not yet persisted:
 - `sync` - Not persisted
 
 **Future Migration Needed:**
+
 ```sql
 ALTER TABLE reset_history ADD COLUMN recorded_at INTEGER;
 ALTER TABLE reset_history ADD COLUMN reason TEXT;
@@ -232,6 +246,7 @@ For large datasets (1000+ entries per addiction):
 3. **Additional Indexes**: If querying by `reason` becomes common, add index on `reason`
 
 Example future API:
+
 ```typescript
 findByAddictionId(
   addictionId: AddictionId,
@@ -305,19 +320,17 @@ class InMemoryResetHistoryRepository implements IResetHistoryRepository {
   }
 
   async findById(id: ResetHistoryId): Promise<ResetHistoryEntry | null> {
-    return this.entries.find((e) => e.id === id) ?? null;
+    return this.entries.find(e => e.id === id) ?? null;
   }
 
   async findByAddictionId(addictionId: AddictionId): Promise<ResetHistoryEntry[]> {
     return this.entries
-      .filter((e) => e.addictionId === addictionId)
+      .filter(e => e.addictionId === addictionId)
       .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
   }
 
   async findAll(): Promise<ResetHistoryEntry[]> {
-    return [...this.entries].sort(
-      (a, b) => b.occurredAt.getTime() - a.occurredAt.getTime()
-    );
+    return [...this.entries].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
   }
 }
 ```
@@ -328,8 +341,8 @@ Complete example integrating with AddictionResetService:
 
 ```typescript
 import { ResetHistoryRepository } from '@/data/repositories';
-import { resetAddictionStreak } from '@/domain/services/AddictionResetService';
 import type { Addiction } from '@/domain/models/Addiction';
+import { resetAddictionStreak } from '@/domain/services/AddictionResetService';
 
 async function handleReset(
   addiction: Addiction,

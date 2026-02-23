@@ -10,14 +10,14 @@
  * This is NOT meant to be imported directly - use this as a reference
  * for implementing the reset handler in your UI component.
  */
-
-import { resetAddictionStreak } from '@/domain/services/AddictionResetService';
-import { persistAddictionUpdate } from './AddictionPersistenceService';
-import { persistResetHistoryEntry } from './ResetHistoryPersistenceService';
 import { AddictionRepository } from '@/data/repositories';
 import { ResetHistoryRepository } from '@/data/repositories';
 import type { Addiction } from '@/domain/models/Addiction';
 import type { ResetHistoryId } from '@/domain/models/ResetHistory';
+import { resetAddictionStreak } from '@/domain/services/AddictionResetService';
+
+import { persistAddictionUpdate } from './AddictionPersistenceService';
+import { persistResetHistoryEntry } from './ResetHistoryPersistenceService';
 
 /**
  * Generates a UUID v4 string for reset history entry ID.
@@ -30,7 +30,7 @@ function generateResetHistoryId(): ResetHistoryId {
     return randomUUID();
   } catch {
     // Fallback: simple UUID v4 generator for MVP
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
       const r = (Math.random() * 16) | 0;
       const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
@@ -59,7 +59,7 @@ export async function executeResetFlow(
     reason?: 'relapse' | 'slip' | 'planned' | 'manual' | 'unknown';
     note?: string;
     occurredAt?: Date;
-  },
+  }
 ): Promise<{
   updatedAddiction: Addiction;
   resetHistoryEntry: Awaited<ReturnType<typeof persistResetHistoryEntry>>;

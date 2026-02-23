@@ -18,6 +18,7 @@ import { BottomNavigation, type BottomTab } from '@/components/layout/BottomNavi
 import { BurgerMenu } from '@/components/layout/BurgerMenu';
 import { Button } from '@/components/ui/Button';
 import { COLORS } from '@/constants/colors';
+import { FONTS } from '@/constants/fonts';
 import { ROUTES } from '@/constants/routes';
 import { DatabaseError } from '@/data/database/db';
 import { AddictionRepository } from '@/data/repositories';
@@ -66,7 +67,7 @@ export function DashboardScreen() {
       }
 
       // Convert date strings/timestamps back to Date objects
-      return parsed.map((item) => ({
+      return parsed.map(item => ({
         ...item,
         createdAt: normalizeToDate(item.createdAt),
         lastResetAt: normalizeToDate(item.lastResetAt),
@@ -99,7 +100,7 @@ export function DashboardScreen() {
       const stored = localStorage.getItem('streakly_addictions');
       const existing = stored ? (JSON.parse(stored) as Addiction[]) : [];
 
-      const updatedList = existing.map((item) =>
+      const updatedList = existing.map(item =>
         item.id === updatedAddiction.id ? updatedAddiction : item
       );
 
@@ -241,13 +242,12 @@ export function DashboardScreen() {
     navigation.navigate(ROUTES.ADDICTION_DETAIL, { addictionId });
   }
 
-
   // Filter only active (non-archived) addictions
-  const activeAddictions = addictions.filter((addiction) => !addiction.isArchived);
+  const activeAddictions = addictions.filter(addiction => !addiction.isArchived);
 
   // Get the selected addiction or the first one as default
   const activeAddiction =
-    activeAddictions.find((addiction) => addiction.id === selectedAddictionId) ||
+    activeAddictions.find(addiction => addiction.id === selectedAddictionId) ||
     (activeAddictions.length > 0 ? activeAddictions[0] : null);
 
   // Update selected addiction when addictions change (e.g., after adding new one)
@@ -256,7 +256,7 @@ export function DashboardScreen() {
       // If no selection or selected addiction is not in the list, select the first one
       if (
         !selectedAddictionId ||
-        !activeAddictions.find((addiction) => addiction.id === selectedAddictionId)
+        !activeAddictions.find(addiction => addiction.id === selectedAddictionId)
       ) {
         setSelectedAddictionId(activeAddictions[0].id);
       }
@@ -297,16 +297,18 @@ export function DashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, isDesktop && styles.headerDesktop]}>
-        <TouchableOpacity
-          onPress={handleMenuToggle}
-          style={styles.menuButton}
-          accessibilityRole="button"
-          accessibilityLabel="Open menu"
-        >
-          <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{activeAddiction.name}</Text>
+      <View style={[styles.headerOuter, isDesktop && styles.headerOuterDesktop]}>
+        <View style={[styles.headerInner, isDesktop && styles.headerInnerDesktop]}>
+          <TouchableOpacity
+            onPress={handleMenuToggle}
+            style={styles.menuButton}
+            accessibilityRole="button"
+            accessibilityLabel="Open menu"
+          >
+            <Text style={styles.menuIcon}>☰</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{activeAddiction.name}</Text>
+        </View>
       </View>
 
       <ScrollView
@@ -337,23 +339,63 @@ export function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
+  addButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 40,
+    padding: 8,
+  },
+  addButtonText: {
+    color: COLORS.text,
+    fontFamily: FONTS.light,
+    fontSize: 24,
   },
   centerContent: {
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
+  container: {
+    backgroundColor: COLORS.background,
+    flex: 1,
+  },
+  emptyStateText: {
+    color: COLORS.text,
+    fontSize: 16,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  emptyStateTitle: {
+    color: COLORS.text,
+    fontFamily: FONTS.semiBold,
+    fontSize: 20,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  headerInner: {
     alignItems: 'center',
+    flexDirection: 'row',
+    paddingBottom: 12,
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 12,
+  },
+  headerInnerDesktop: {
+    alignSelf: 'center',
+    maxWidth: 800,
+    paddingBottom: 16,
+    paddingHorizontal: 40,
+    paddingTop: 24,
+    width: '100%',
+  },
+  headerOuter: {
     backgroundColor: COLORS.background,
-    borderBottomWidth: 1,
     borderBottomColor: COLORS.border || '#E0E0E0',
+    borderBottomWidth: 1,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -361,78 +403,43 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 4,
   },
-  headerDesktop: {
-    paddingHorizontal: 40,
-    paddingTop: 24,
-    paddingBottom: 16,
-    maxWidth: 800,
-    alignSelf: 'center',
+  headerOuterDesktop: {
     width: '100%',
-  },
-  menuButton: {
-    padding: 8,
-    marginRight: 12,
-  },
-  menuIcon: {
-    fontSize: 20,
-    color: COLORS.text,
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.text,
-    letterSpacing: 0.5,
-    textTransform: 'capitalize',
   },
   headerRight: {
     width: 40,
   },
-  addButton: {
-    padding: 8,
-    minWidth: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addButtonText: {
-    fontSize: 24,
+  headerTitle: {
     color: COLORS.text,
-    fontWeight: '300',
-  },
-  scrollView: {
     flex: 1,
+    fontFamily: FONTS.bold,
+    fontSize: 20,
+    letterSpacing: 0.5,
+    textTransform: 'capitalize',
+  },
+  loadingText: {
+    color: COLORS.text,
+    fontSize: 16,
+  },
+  menuButton: {
+    marginRight: 12,
+    padding: 8,
+  },
+  menuIcon: {
+    color: COLORS.text,
+    fontSize: 20,
   },
   scrollContent: {
     paddingBottom: 100,
   },
   scrollContentDesktop: {
-    paddingBottom: 120,
-    maxWidth: 800,
     alignSelf: 'center',
+    maxWidth: 800,
+    paddingBottom: 120,
     width: '100%',
   },
-  loadingText: {
-    fontSize: 16,
-    color: COLORS.text,
-  },
-  errorText: {
-    fontSize: 16,
-    color: COLORS.error,
-    marginBottom: 16,
-  },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: COLORS.text,
-    marginBottom: 24,
-    textAlign: 'center',
+  scrollView: {
+    flex: 1,
   },
 });

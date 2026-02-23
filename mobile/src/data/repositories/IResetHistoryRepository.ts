@@ -1,9 +1,6 @@
 // Repository interface for ResetHistoryEntry entity
-import type {
-  ResetHistoryEntry,
-  ResetHistoryId,
-} from '@/domain/models/ResetHistory';
 import type { AddictionId } from '@/domain/models/Addiction';
+import type { ResetHistoryEntry, ResetHistoryId } from '@/domain/models/ResetHistory';
 
 /**
  * Input type for creating a new ResetHistoryEntry.

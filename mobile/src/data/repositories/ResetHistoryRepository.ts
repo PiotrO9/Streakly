@@ -1,19 +1,9 @@
 // SQLite implementation of ResetHistory repository
-import {
-  DatabaseError,
-  executeQuery,
-  executeQueryOne,
-  executeRun,
-} from '@/data/database/db';
-import type {
-  ResetHistoryEntry,
-  ResetHistoryId,
-} from '@/domain/models/ResetHistory';
+import { DatabaseError, executeQuery, executeQueryOne, executeRun } from '@/data/database/db';
 import type { AddictionId } from '@/domain/models/Addiction';
-import type {
-  CreateResetHistoryInput,
-  IResetHistoryRepository,
-} from './IResetHistoryRepository';
+import type { ResetHistoryEntry, ResetHistoryId } from '@/domain/models/ResetHistory';
+
+import type { CreateResetHistoryInput, IResetHistoryRepository } from './IResetHistoryRepository';
 
 /**
  * Generates a UUID v4 string.
@@ -27,7 +17,7 @@ function generateUUID(): string {
     return randomUUID();
   } catch {
     // Fallback: simple UUID v4 generator for MVP
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
       const r = (Math.random() * 16) | 0;
       const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
@@ -122,11 +112,7 @@ export class ResetHistoryRepository implements IResetHistoryRepository {
     addictionId: AddictionId;
     occurredAt: Date;
   }): [string, string, number] {
-    return [
-      input.id,
-      input.addictionId,
-      this.dateToTimestamp(input.occurredAt),
-    ];
+    return [input.id, input.addictionId, this.dateToTimestamp(input.occurredAt)];
   }
 
   async create(input: CreateResetHistoryInput): Promise<ResetHistoryEntry> {
@@ -169,7 +155,7 @@ export class ResetHistoryRepository implements IResetHistoryRepository {
         `Failed to create ResetHistoryEntry: ${error instanceof Error ? error.message : String(error)}`,
         sql,
         params,
-        error,
+        error
       );
     }
   }
@@ -194,14 +180,12 @@ export class ResetHistoryRepository implements IResetHistoryRepository {
         `Failed to find ResetHistoryEntry by id: ${error instanceof Error ? error.message : String(error)}`,
         sql,
         params,
-        error,
+        error
       );
     }
   }
 
-  async findByAddictionId(
-    addictionId: AddictionId,
-  ): Promise<ResetHistoryEntry[]> {
+  async findByAddictionId(addictionId: AddictionId): Promise<ResetHistoryEntry[]> {
     const sql = `
       SELECT id, addiction_id, reset_at 
       FROM reset_history 
@@ -213,9 +197,7 @@ export class ResetHistoryRepository implements IResetHistoryRepository {
     try {
       const result = await executeQuery<ResetHistoryRow>(sql, params);
 
-      return result.rows.map((row) =>
-        ResetHistoryRepository.rowToDomain(row),
-      );
+      return result.rows.map(row => ResetHistoryRepository.rowToDomain(row));
     } catch (error) {
       if (error instanceof DatabaseError) {
         throw error;
@@ -224,7 +206,7 @@ export class ResetHistoryRepository implements IResetHistoryRepository {
         `Failed to find ResetHistoryEntry by addictionId: ${error instanceof Error ? error.message : String(error)}`,
         sql,
         params,
-        error,
+        error
       );
     }
   }
@@ -240,9 +222,7 @@ export class ResetHistoryRepository implements IResetHistoryRepository {
     try {
       const result = await executeQuery<ResetHistoryRow>(sql, params);
 
-      return result.rows.map((row) =>
-        ResetHistoryRepository.rowToDomain(row),
-      );
+      return result.rows.map(row => ResetHistoryRepository.rowToDomain(row));
     } catch (error) {
       if (error instanceof DatabaseError) {
         throw error;
@@ -251,7 +231,7 @@ export class ResetHistoryRepository implements IResetHistoryRepository {
         `Failed to find all ResetHistoryEntry: ${error instanceof Error ? error.message : String(error)}`,
         sql,
         params,
-        error,
+        error
       );
     }
   }

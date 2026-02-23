@@ -1,14 +1,38 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { initializeDatabase, getBootstrapResult } from '@/data/database/db';
+import { useFonts } from 'expo-font';
+
 import { COLORS } from '@/constants/colors';
+import { FONTS, FONT_ASSETS } from '@/constants/fonts';
+import { getBootstrapResult, initializeDatabase } from '@/data/database/db';
+
 import { RootNavigator } from './navigation/RootNavigator';
 
+const defaultTextStyle = { fontFamily: FONTS.regular };
+
+function setDefaultFontFamily() {
+  const originalRender = (Text as any).render;
+  if (!originalRender) return;
+
+  (Text as any).render = function (props: any, ref: any) {
+    const { style, ...restProps } = props;
+    const mergedStyle = [defaultTextStyle, style];
+    return originalRender.call(this, { ...restProps, style: mergedStyle }, ref);
+  };
+}
+
 export default function App() {
+  const [fontsLoaded] = useFonts(FONT_ASSETS);
   const [isDatabaseReady, setIsDatabaseReady] = useState(false);
   const [databaseError, setDatabaseError] = useState<Error | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      setDefaultFontFamily();
+    }
+  }, [fontsLoaded]);
 
   useEffect(() => {
     async function handleInitializeDatabase() {
@@ -41,8 +65,7 @@ export default function App() {
     void handleInitializeDatabase();
   }, []);
 
-  // Show loading screen while initializing
-  if (isInitializing || !isDatabaseReady) {
+  if (!fontsLoaded || isInitializing || !isDatabaseReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -60,7 +83,6 @@ export default function App() {
     );
   }
 
-  // If there was an error but we're still trying to render
   if (databaseError) {
     console.error('[App] Database initialization error (rendering anyway):', databaseError);
   }
@@ -69,6 +91,29 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  errorContainer: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 8,
+    marginTop: 24,
+    padding: 16,
+    width: '100%',
+  },
+  errorHint: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  errorMessage: {
+    color: COLORS.text,
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  errorTitle: {
+    color: COLORS.error,
+    fontFamily: FONTS.semiBold,
+    fontSize: 18,
+    marginBottom: 8,
+  },
   loadingContainer: {
     alignItems: 'center',
     backgroundColor: COLORS.background,
@@ -78,30 +123,8 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: COLORS.textSecondary,
+    fontFamily: FONTS.regular,
     fontSize: 16,
     marginTop: 16,
-  },
-  errorContainer: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 8,
-    marginTop: 24,
-    padding: 16,
-    width: '100%',
-  },
-  errorTitle: {
-    color: COLORS.error,
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  errorMessage: {
-    color: COLORS.text,
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  errorHint: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    fontStyle: 'italic',
   },
 });

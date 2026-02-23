@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-nativ
 
 import { Card } from '@/components/ui/Card';
 import { COLORS } from '@/constants/colors';
+import { FONTS } from '@/constants/fonts';
 
 interface AddictionCardProps {
   name: string;
@@ -31,10 +32,7 @@ export function AddictionCard({ name, streakLabel, onPress, onResetPress }: Addi
     >
       <Pressable
         onPress={handleResetPress}
-        style={({ pressed }) => [
-          styles.resetButton,
-          pressed && styles.resetButtonPressed,
-        ]}
+        style={({ pressed }) => [styles.resetButton, pressed && styles.resetButtonPressed]}
         // Only set accessibilityRole when card is not clickable to avoid nested buttons
         accessibilityRole={onPress ? undefined : 'button'}
         accessibilityLabel={`Reset streak for ${name}`}
@@ -81,29 +79,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   content: {
-    flexDirection: 'row',
     alignItems: 'center',
+    flexDirection: 'row',
     justifyContent: 'space-between',
   },
   leftSection: {
+    alignItems: 'center',
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
   },
   name: {
     color: COLORS.text,
-    fontSize: 18,
-    fontWeight: '600',
     flex: 1,
-  },
-  streak: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    marginLeft: 12,
-  },
-  resetButtonWrapper: {
-    marginLeft: 12,
+    fontFamily: FONTS.semiBold,
+    fontSize: 18,
   },
   resetButton: {
     backgroundColor: COLORS.error,
@@ -116,8 +106,15 @@ const styles = StyleSheet.create({
   },
   resetButtonText: {
     color: COLORS.surface,
+    fontFamily: FONTS.semiBold,
     fontSize: 12,
-    fontWeight: '600',
+  },
+  resetButtonWrapper: {
+    marginLeft: 12,
+  },
+  streak: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    marginLeft: 12,
   },
 });
-

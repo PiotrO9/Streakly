@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { FONTS } from '@/constants/fonts';
+
 interface HeaderProps {
   title: string;
 }
@@ -21,7 +23,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#000000',
+    fontFamily: FONTS.semiBold,
     fontSize: 20,
-    fontWeight: '600',
   },
 });

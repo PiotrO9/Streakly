@@ -47,7 +47,7 @@ export function normalizeToDate(value: Date | string | number): Date {
  */
 export function formatElapsedTime(
   lastResetAt: Date | string | number,
-  now: Date | string | number = new Date(),
+  now: Date | string | number = new Date()
 ): string {
   const lastResetDate = normalizeToDate(lastResetAt);
   const nowDate = normalizeToDate(now);
@@ -96,7 +96,7 @@ export interface ElapsedTimeBreakdown {
 
 export function calculateElapsedTimeBreakdown(
   lastResetAt: Date | string | number,
-  now: Date | string | number = new Date(),
+  now: Date | string | number = new Date()
 ): ElapsedTimeBreakdown {
   const lastResetDate = normalizeToDate(lastResetAt);
   const nowDate = normalizeToDate(now);

@@ -1,11 +1,7 @@
 // SQLite implementation of Addiction repository
-import {
-  DatabaseError,
-  executeQuery,
-  executeQueryOne,
-  executeRun,
-} from '@/data/database/db';
+import { DatabaseError, executeQuery, executeQueryOne, executeRun } from '@/data/database/db';
 import type { Addiction, AddictionId } from '@/domain/models/Addiction';
+
 import type {
   CreateAddictionInput,
   IAddictionRepository,
@@ -24,7 +20,7 @@ function generateUUID(): string {
     return randomUUID();
   } catch {
     // Fallback: simple UUID v4 generator for MVP
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
       const r = (Math.random() * 16) | 0;
       const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
@@ -74,9 +70,7 @@ export class AddictionRepository implements IAddictionRepository {
   private static rowToDomain(row: AddictionRow): Addiction {
     const createdAt = this.timestampToDate(row.created_at);
     // If last_reset_at is null, use createdAt (new addiction, no resets yet)
-    const lastResetAt = row.last_reset_at
-      ? this.timestampToDate(row.last_reset_at)
-      : createdAt;
+    const lastResetAt = row.last_reset_at ? this.timestampToDate(row.last_reset_at) : createdAt;
 
     return {
       id: row.id,
@@ -154,7 +148,7 @@ export class AddictionRepository implements IAddictionRepository {
         `Failed to create Addiction: ${error instanceof Error ? error.message : String(error)}`,
         sql,
         params,
-        error,
+        error
       );
     }
   }
@@ -179,7 +173,7 @@ export class AddictionRepository implements IAddictionRepository {
         `Failed to find Addiction by id: ${error instanceof Error ? error.message : String(error)}`,
         sql,
         params,
-        error,
+        error
       );
     }
   }
@@ -191,7 +185,7 @@ export class AddictionRepository implements IAddictionRepository {
     try {
       const result = await executeQuery<AddictionRow>(sql, params);
 
-      return result.rows.map((row) => AddictionRepository.rowToDomain(row));
+      return result.rows.map(row => AddictionRepository.rowToDomain(row));
     } catch (error) {
       if (error instanceof DatabaseError) {
         throw error;
@@ -200,7 +194,7 @@ export class AddictionRepository implements IAddictionRepository {
         `Failed to find all Addictions: ${error instanceof Error ? error.message : String(error)}`,
         sql,
         params,
-        error,
+        error
       );
     }
   }
@@ -215,7 +209,7 @@ export class AddictionRepository implements IAddictionRepository {
 
     // Build UPDATE statement dynamically based on provided fields
     const updates: string[] = [];
-    const params: Array<string | number> = [];
+    const params: (string | number)[] = [];
 
     if (input.name !== undefined) {
       updates.push('name = ?');
@@ -270,7 +264,7 @@ export class AddictionRepository implements IAddictionRepository {
         `Failed to update Addiction: ${error instanceof Error ? error.message : String(error)}`,
         sql,
         params,
-        error,
+        error
       );
     }
   }
@@ -293,7 +287,7 @@ export class AddictionRepository implements IAddictionRepository {
         `Failed to delete Addiction: ${error instanceof Error ? error.message : String(error)}`,
         sql,
         params,
-        error,
+        error
       );
     }
   }

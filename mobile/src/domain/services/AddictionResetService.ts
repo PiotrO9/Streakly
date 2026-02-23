@@ -1,6 +1,5 @@
 // Business logic for explicit Addiction streak reset.
 // Pure domain logic: no persistence, no UI, no side effects.
-
 import type { Addiction, ResetReason, SyncInfo } from '../models/Addiction';
 import type {
   ResetHistoryEntry,
@@ -96,16 +95,8 @@ function assertValidDate(value: Date, fieldName: string): void {
  *   but will typically have previousStreakDays === 0.
  */
 export function resetAddictionStreak(params: ResetStreakParams): ResetStreakResult {
-  const {
-    addiction,
-    now,
-    resetId,
-    reason,
-    note,
-    occurredAt,
-    timezoneOffsetMinutes,
-    createdBy,
-  } = params;
+  const { addiction, now, resetId, reason, note, occurredAt, timezoneOffsetMinutes, createdBy } =
+    params;
 
   if (!addiction) {
     throw new Error('resetAddictionStreak: "addiction" is required.');
@@ -139,7 +130,7 @@ export function resetAddictionStreak(params: ResetStreakParams): ResetStreakResu
   // Resets in the future relative to "now" are considered invalid.
   if (occurredAtTime > nowTime) {
     throw new Error(
-      'resetAddictionStreak: "occurredAt" cannot be in the future relative to "now".',
+      'resetAddictionStreak: "occurredAt" cannot be in the future relative to "now".'
     );
   }
 
@@ -148,8 +139,10 @@ export function resetAddictionStreak(params: ResetStreakParams): ResetStreakResu
 
   // Calculate the streak length immediately before the reset,
   // using the moment when the reset actually happened (occurredAt).
-  const previousStreakDays: number =
-    StreakService.calculateCurrentStreakDaysFromAddiction(addiction, effectiveOccurredAt);
+  const previousStreakDays: number = StreakService.calculateCurrentStreakDaysFromAddiction(
+    addiction,
+    effectiveOccurredAt
+  );
 
   // The streak after a classic reset is explicitly 0 days.
   const newStreakDays: number = 0;
@@ -209,4 +202,3 @@ export function resetAddictionStreak(params: ResetStreakParams): ResetStreakResu
     resetHistoryEntry,
   };
 }
-

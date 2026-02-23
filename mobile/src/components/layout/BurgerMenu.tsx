@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { COLORS } from '@/constants/colors';
+import { FONTS } from '@/constants/fonts';
 import type { Addiction } from '@/domain/models/Addiction';
 import { StreakService } from '@/domain/services/StreakService';
 
@@ -57,15 +58,10 @@ export function BurgerMenu({
   const isDesktop = width >= 768;
 
   // Filter only active (non-archived) addictions
-  const activeAddictions = addictions.filter((addiction) => !addiction.isArchived);
+  const activeAddictions = addictions.filter(addiction => !addiction.isArchived);
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.menuOverlay}>
         <Pressable style={styles.menuOverlayBackdrop} onPress={onClose} />
         <Animated.View
@@ -104,10 +100,10 @@ export function BurgerMenu({
                 </View>
               </TouchableOpacity>
             )}
-            {activeAddictions.map((addiction) => {
+            {activeAddictions.map(addiction => {
               const streakDays = StreakService.calculateCurrentStreakDaysFromAddiction(
                 addiction,
-                currentTime,
+                currentTime
               );
               const streakLabel = formatStreakDays(streakDays);
               const isSelected = addiction.id === selectedAddictionId;
@@ -121,19 +117,11 @@ export function BurgerMenu({
                   accessibilityLabel={`Select ${addiction.name}, ${streakLabel}`}
                 >
                   <View style={styles.menuItemContent}>
-                    <Text
-                      style={[
-                        styles.menuItemName,
-                        isSelected && styles.menuItemNameSelected,
-                      ]}
-                    >
+                    <Text style={[styles.menuItemName, isSelected && styles.menuItemNameSelected]}>
                       {addiction.name}
                     </Text>
                     <Text
-                      style={[
-                        styles.menuItemStreak,
-                        isSelected && styles.menuItemStreakSelected,
-                      ]}
+                      style={[styles.menuItemStreak, isSelected && styles.menuItemStreakSelected]}
                     >
                       {streakLabel}
                     </Text>
@@ -151,7 +139,7 @@ export function BurgerMenu({
                 accessibilityRole="button"
                 accessibilityLabel="Add new addiction"
               >
-                <Text style={styles.menuAddButtonText}>+ Add New Addiction</Text>
+                <Text style={styles.menuAddButtonText}>Add New Addiction</Text>
               </TouchableOpacity>
             )}
           </ScrollView>
@@ -162,98 +150,99 @@ export function BurgerMenu({
 }
 
 const styles = StyleSheet.create({
-  menuOverlay: {
-    flex: 1,
-    flexDirection: 'row',
+  menuAddButton: {
+    alignItems: 'center',
+    backgroundColor: COLORS.primary || '#3B82F6',
+    borderRadius: 6,
+    margin: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  menuOverlayBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  menuAddButtonText: {
+    color: COLORS.surface || '#FFFFFF',
+    fontFamily: FONTS.semiBold,
+    fontSize: 14,
+  },
+  menuCloseButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 40,
+    padding: 8,
+  },
+  menuCloseIcon: {
+    color: COLORS.text,
+    fontFamily: FONTS.light,
+    fontSize: 28,
+    lineHeight: 28,
   },
   menuContent: {
     backgroundColor: COLORS.background,
-    width: 280,
-    height: '100%',
-    paddingTop: 16,
     borderRadius: 0,
-    position: 'absolute',
+    height: '100%',
     left: 0,
+    paddingTop: 16,
+    position: 'absolute',
     top: 0,
+    width: 280,
   },
   menuContentDesktop: {
     width: 320,
   },
   menuHeader: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
     borderBottomColor: COLORS.border || 'rgba(0, 0, 0, 0.1)',
-  },
-  menuTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  menuCloseButton: {
-    padding: 8,
-    minWidth: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  menuCloseIcon: {
-    fontSize: 28,
-    color: COLORS.text,
-    fontWeight: '300',
-    lineHeight: 28,
-  },
-  menuScrollView: {
-    maxHeight: 400,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: 16,
+    paddingHorizontal: 16,
   },
   menuItem: {
+    borderBottomColor: COLORS.border || 'rgba(0, 0, 0, 0.05)',
+    borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border || 'rgba(0, 0, 0, 0.05)',
+  },
+  menuItemContent: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  menuItemName: {
+    color: COLORS.text,
+    flex: 1,
+    fontFamily: FONTS.medium,
+    fontSize: 16,
+  },
+  menuItemNameSelected: {
+    color: COLORS.primary || '#3B82F6',
+    fontFamily: FONTS.semiBold,
   },
   menuItemSelected: {
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
   },
-  menuItemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  menuItemName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: COLORS.text,
-    flex: 1,
-  },
-  menuItemNameSelected: {
-    fontWeight: '600',
-    color: COLORS.primary || '#3B82F6',
-  },
   menuItemStreak: {
-    fontSize: 14,
     color: COLORS.textSecondary || 'rgba(0, 0, 0, 0.6)',
+    fontSize: 14,
     marginLeft: 12,
   },
   menuItemStreakSelected: {
     color: COLORS.primary || '#3B82F6',
   },
-  menuAddButton: {
-    margin: 16,
-    padding: 16,
-    backgroundColor: COLORS.primary || '#3B82F6',
-    borderRadius: 8,
-    alignItems: 'center',
+  menuOverlay: {
+    flex: 1,
+    flexDirection: 'row',
   },
-  menuAddButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.surface || '#FFFFFF',
+  menuOverlayBackdrop: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    flex: 1,
+  },
+  menuScrollView: {
+    maxHeight: 400,
+  },
+  menuTitle: {
+    color: COLORS.text,
+    fontFamily: FONTS.semiBold,
+    fontSize: 20,
   },
 });

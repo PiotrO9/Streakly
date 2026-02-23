@@ -1,9 +1,9 @@
-import type { ResetHistoryEntry } from '@/domain/models/ResetHistory';
+import { DatabaseError } from '@/data/database/db';
 import type {
   CreateResetHistoryInput,
   IResetHistoryRepository,
 } from '@/data/repositories/IResetHistoryRepository';
-import { DatabaseError } from '@/data/database/db';
+import type { ResetHistoryEntry } from '@/domain/models/ResetHistory';
 
 export interface PersistResetHistoryDependencies {
   resetHistoryRepository: IResetHistoryRepository;
@@ -24,7 +24,7 @@ export interface PersistResetHistoryDependencies {
  */
 export async function persistResetHistoryEntry(
   entry: ResetHistoryEntry,
-  dependencies: PersistResetHistoryDependencies,
+  dependencies: PersistResetHistoryDependencies
 ): Promise<ResetHistoryEntry> {
   const { resetHistoryRepository, logError } = dependencies;
 
@@ -54,7 +54,7 @@ export async function persistResetHistoryEntry(
       'Unexpected error while persisting ResetHistoryEntry',
       undefined,
       undefined,
-      error,
+      error
     );
   }
 }
@@ -70,4 +70,3 @@ function mapEntryToCreateInput(entry: ResetHistoryEntry): CreateResetHistoryInpu
     note: entry.note,
   };
 }
-

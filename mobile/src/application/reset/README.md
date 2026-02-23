@@ -32,15 +32,18 @@ persistResetHistoryEntry → ResetHistoryRepository.create
 ## 2. How to Call Repository Update
 
 The `AddictionRepository.update` method accepts:
+
 - `id: AddictionId` - The addiction's unique identifier
 - `input: UpdateAddictionInput` - Partial update object with optional fields
 
 **Key fields for reset**:
+
 - `lastResetAt: Date` - **Required** - Updates the streak start timestamp
 - `longestStreakDays?: number` - Optional (merged in memory until migration)
 - `resetCount?: number` - Optional (merged in memory until migration)
 
 **Example**:
+
 ```typescript
 const updateInput: UpdateAddictionInput = {
   lastResetAt: updatedAddiction.lastResetAt,
@@ -59,7 +62,7 @@ const persisted = await addictionRepository.update(addiction.id, updateInput);
 // mobile/src/application/reset/AddictionPersistenceService.ts
 export async function persistAddictionUpdate(
   updatedAddiction: Addiction,
-  dependencies: PersistAddictionUpdateDependencies,
+  dependencies: PersistAddictionUpdateDependencies
 ): Promise<Addiction> {
   const { addictionRepository, logError } = dependencies;
 
@@ -85,11 +88,11 @@ export async function persistAddictionUpdate(
 
 ```typescript
 // In your UI component (e.g., DashboardScreen.tsx)
-import { resetAddictionStreak } from '@/domain/services/AddictionResetService';
 import { persistAddictionUpdate } from '@/application/reset/AddictionPersistenceService';
 import { persistResetHistoryEntry } from '@/application/reset/ResetHistoryPersistenceService';
 import { AddictionRepository } from '@/data/repositories';
 import { ResetHistoryRepository } from '@/data/repositories';
+import { resetAddictionStreak } from '@/domain/services/AddictionResetService';
 
 async function handleResetPress(addiction: Addiction) {
   const now = new Date();
@@ -106,17 +109,15 @@ async function handleResetPress(addiction: Addiction) {
 
     // Step 2: Persist Addiction FIRST (source of truth)
     const addictionRepo = new AddictionRepository();
-    const persistedAddiction = await persistAddictionUpdate(
-      resetResult.updatedAddiction,
-      { addictionRepository: addictionRepo }
-    );
+    const persistedAddiction = await persistAddictionUpdate(resetResult.updatedAddiction, {
+      addictionRepository: addictionRepo,
+    });
 
     // Step 3: Persist ResetHistory SECOND (analytics)
     const historyRepo = new ResetHistoryRepository();
-    await persistResetHistoryEntry(
-      resetResult.resetHistoryEntry,
-      { resetHistoryRepository: historyRepo }
-    );
+    await persistResetHistoryEntry(resetResult.resetHistoryEntry, {
+      resetHistoryRepository: historyRepo,
+    });
 
     // Success: refresh UI
     await fetchAddictions();
@@ -195,6 +196,7 @@ try {
 **MVP approach**: Acceptable - the streak is correct, history can be reconstructed if needed.
 
 **Future enhancement**: Consider:
+
 - Retry logic for history persistence
 - Transaction wrapping (if SQLite transactions are added)
 - Queue for failed history writes
@@ -206,16 +208,19 @@ try {
 **Scenario**: User resets twice within seconds/minutes.
 
 **Current behavior**:
+
 - Each reset creates a new `lastResetAt` timestamp
 - Each reset creates a separate ResetHistoryEntry
 - `previousStreakDays` for the second reset will be `0` (since first reset just happened)
 
 **Handling**:
+
 - Domain logic already handles this (no restrictions)
 - Persistence works correctly (each update overwrites `last_reset_at`)
 - History entries are distinct (different IDs, timestamps)
 
 **Example**:
+
 ```typescript
 // Reset 1 at 10:00:00
 await executeResetFlow(addiction); // lastResetAt = 10:00:00
@@ -232,17 +237,19 @@ await executeResetFlow(addiction); // lastResetAt = 10:00:05
 **Current behavior**: No built-in locking mechanism.
 
 **Handling**:
+
 - **UI-level**: Disable reset button during async operation
 - **Application-level**: Consider debouncing or request queuing
 - **Database-level**: SQLite handles concurrent writes (last write wins)
 
 **Example**:
+
 ```typescript
 const [isResetting, setIsResetting] = useState(false);
 
 async function handleResetPress(addiction: Addiction) {
   if (isResetting) return; // Prevent concurrent resets
-  
+
   setIsResetting(true);
   try {
     await executeResetFlow(addiction);
@@ -259,6 +266,7 @@ async function handleResetPress(addiction: Addiction) {
 **Current behavior**: `AddictionRepository.update` throws `DatabaseError` if addiction not found.
 
 **Handling**:
+
 - Error is caught and surfaced to UI
 - User sees error message
 - No partial state (reset is not applied)
@@ -270,6 +278,7 @@ async function handleResetPress(addiction: Addiction) {
 **Current behavior**: `DatabaseError` is thrown and caught.
 
 **Handling**:
+
 - Error is logged
 - User sees error message
 - Reset is not applied (atomicity maintained)
@@ -333,9 +342,7 @@ If multiple addictions need reset:
 
 ```typescript
 // Future: Batch persistence
-await Promise.all(
-  addictions.map(addiction => executeResetFlow(addiction))
-);
+await Promise.all(addictions.map(addiction => executeResetFlow(addiction)));
 ```
 
 ## Summary

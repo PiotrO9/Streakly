@@ -17,6 +17,7 @@ import { TimeCounter } from '@/components/addiction/TimeCounter';
 import { BottomNavigation, type BottomTab } from '@/components/layout/BottomNavigation';
 import { BurgerMenu } from '@/components/layout/BurgerMenu';
 import { COLORS } from '@/constants/colors';
+import { FONTS } from '@/constants/fonts';
 import { ROUTES } from '@/constants/routes';
 import { DatabaseError } from '@/data/database/db';
 import { AddictionRepository } from '@/data/repositories';
@@ -111,7 +112,7 @@ export function AddictionDetailScreen({ route, navigation }: AddictionDetailScre
       }
 
       // Convert date strings/timestamps back to Date objects
-      return parsed.map((item) => ({
+      return parsed.map(item => ({
         ...item,
         createdAt: normalizeToDate(item.createdAt),
         lastResetAt: normalizeToDate(item.lastResetAt),
@@ -307,21 +308,23 @@ export function AddictionDetailScreen({ route, navigation }: AddictionDetailScre
   const timeBreakdown = calculateElapsedTimeBreakdown(addiction.lastResetAt, currentTime);
 
   // Filter only active (non-archived) addictions
-  const activeAddictions = addictions.filter((addiction) => !addiction.isArchived);
+  const activeAddictions = addictions.filter(addiction => !addiction.isArchived);
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, isDesktop && styles.headerDesktop]}>
-        <TouchableOpacity
-          onPress={handleMenuToggle}
-          style={styles.menuButton}
-          accessibilityRole="button"
-          accessibilityLabel="Open menu"
-        >
-          <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{addiction.name}</Text>
-        <View style={styles.headerRight} />
+      <View style={[styles.headerOuter, isDesktop && styles.headerOuterDesktop]}>
+        <View style={[styles.headerInner, isDesktop && styles.headerInnerDesktop]}>
+          <TouchableOpacity
+            onPress={handleMenuToggle}
+            style={styles.menuButton}
+            accessibilityRole="button"
+            accessibilityLabel="Open menu"
+          >
+            <Text style={styles.menuIcon}>☰</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{addiction.name}</Text>
+          <View style={styles.headerRight} />
+        </View>
       </View>
 
       <ScrollView
@@ -351,23 +354,50 @@ export function AddictionDetailScreen({ route, navigation }: AddictionDetailScre
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
+  backButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  backButtonText: {
+    color: COLORS.surface,
+    fontFamily: FONTS.semiBold,
+    fontSize: 16,
   },
   centerContent: {
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
+  container: {
+    backgroundColor: COLORS.background,
+    flex: 1,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  headerInner: {
     alignItems: 'center',
+    flexDirection: 'row',
+    paddingBottom: 12,
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 12,
+  },
+  headerInnerDesktop: {
+    alignSelf: 'center',
+    maxWidth: 800,
+    paddingBottom: 16,
+    paddingHorizontal: 40,
+    paddingTop: 24,
+    width: '100%',
+  },
+  headerOuter: {
     backgroundColor: COLORS.background,
-    borderBottomWidth: 1,
     borderBottomColor: COLORS.border || '#E0E0E0',
+    borderBottomWidth: 1,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -375,63 +405,41 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 4,
   },
-  headerDesktop: {
-    paddingHorizontal: 40,
-    paddingTop: 24,
-    paddingBottom: 16,
-    maxWidth: 800,
-    alignSelf: 'center',
+  headerOuterDesktop: {
     width: '100%',
-  },
-  menuButton: {
-    padding: 8,
-    marginRight: 12,
-  },
-  menuIcon: {
-    fontSize: 20,
-    color: COLORS.text,
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
   },
   headerRight: {
     width: 40,
   },
-  scrollView: {
+  headerTitle: {
+    color: COLORS.text,
     flex: 1,
+    fontFamily: FONTS.semiBold,
+    fontSize: 18,
+  },
+  loadingText: {
+    color: COLORS.text,
+    fontSize: 16,
+  },
+  menuButton: {
+    marginRight: 12,
+    padding: 8,
+  },
+  menuIcon: {
+    color: COLORS.text,
+    fontSize: 20,
   },
   scrollContent: {
     paddingBottom: 100,
   },
   scrollContentDesktop: {
-    paddingBottom: 120,
-    maxWidth: 800,
     alignSelf: 'center',
+    maxWidth: 800,
+    paddingBottom: 120,
     width: '100%',
   },
-  loadingText: {
-    fontSize: 16,
-    color: COLORS.text,
-  },
-  errorText: {
-    fontSize: 16,
-    color: COLORS.error,
-    marginBottom: 16,
-  },
-  backButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
-  },
-  backButtonText: {
-    color: COLORS.surface,
-    fontSize: 16,
-    fontWeight: '600',
+  scrollView: {
+    flex: 1,
   },
 });

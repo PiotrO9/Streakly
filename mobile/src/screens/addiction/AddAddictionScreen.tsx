@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 
 import type { RootStackNavigationProp } from '@/app/navigation/types';
-import { Button } from '@/components/ui/Button';
 import { BurgerMenu } from '@/components/layout/BurgerMenu';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { COLORS } from '@/constants/colors';
 import { ROUTES } from '@/constants/routes';
@@ -98,7 +98,7 @@ export function AddAddictionScreen() {
       }
 
       // Convert date strings/timestamps back to Date objects
-      return parsed.map((item) => ({
+      return parsed.map(item => ({
         ...item,
         createdAt: normalizeToDate(item.createdAt),
         lastResetAt: normalizeToDate(item.lastResetAt),
@@ -179,7 +179,7 @@ export function AddAddictionScreen() {
    * Updates form state with new value
    */
   function handleNameChange(value: string): void {
-    setFormState((prev) => ({
+    setFormState(prev => ({
       ...prev,
       name: value,
     }));
@@ -291,20 +291,22 @@ export function AddAddictionScreen() {
   }
 
   // Filter only active (non-archived) addictions
-  const activeAddictions = addictions.filter((addiction) => !addiction.isArchived);
+  const activeAddictions = addictions.filter(addiction => !addiction.isArchived);
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, isDesktop && styles.headerDesktop]}>
-        <TouchableOpacity
-          onPress={handleMenuToggle}
-          style={styles.menuButton}
-          accessibilityRole="button"
-          accessibilityLabel="Open menu"
-        >
-          <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
-        <View style={styles.headerRight} />
+      <View style={[styles.headerOuter, isDesktop && styles.headerOuterDesktop]}>
+        <View style={[styles.headerInner, isDesktop && styles.headerInnerDesktop]}>
+          <TouchableOpacity
+            onPress={handleMenuToggle}
+            style={styles.menuButton}
+            accessibilityRole="button"
+            accessibilityLabel="Open menu"
+          >
+            <Text style={styles.menuIcon}>☰</Text>
+          </TouchableOpacity>
+          <View style={styles.headerRight} />
+        </View>
       </View>
 
       <ScrollView
@@ -313,9 +315,7 @@ export function AddAddictionScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
-          <Text style={styles.subtitle}>
-            Enter the name of the addiction you want to track
-          </Text>
+          <Text style={styles.subtitle}>Enter the name of the addiction you want to track</Text>
 
           <View style={styles.form}>
             <Input
@@ -328,11 +328,7 @@ export function AddAddictionScreen() {
             />
 
             <View style={styles.buttonContainer}>
-              <Button
-                title="Add"
-                onPress={handleSubmit}
-                disabled={!isSubmitReady}
-              />
+              <Button title="Add" onPress={handleSubmit} disabled={!isSubmitReady} />
             </View>
           </View>
         </View>
@@ -356,17 +352,38 @@ export function AddAddictionScreen() {
 }
 
 const styles = StyleSheet.create({
+  buttonContainer: {
+    marginTop: 8,
+  },
   container: {
     backgroundColor: COLORS.background,
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+  form: {
+    gap: 20,
+  },
+  headerInner: {
     alignItems: 'center',
+    flexDirection: 'row',
+    paddingBottom: 12,
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 12,
+  },
+  headerInnerDesktop: {
+    alignSelf: 'center',
+    maxWidth: 800,
+    paddingBottom: 16,
+    paddingHorizontal: 40,
+    paddingTop: 24,
+    width: '100%',
+  },
+  headerOuter: {
     backgroundColor: COLORS.surface,
+    elevation: 8,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -374,52 +391,36 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 8,
   },
-  headerDesktop: {
-    paddingHorizontal: 40,
-    paddingTop: 24,
-    paddingBottom: 16,
-    maxWidth: 800,
-    alignSelf: 'center',
+  headerOuterDesktop: {
     width: '100%',
-  },
-  menuButton: {
-    padding: 8,
-    marginRight: 12,
-  },
-  menuIcon: {
-    fontSize: 20,
-    color: COLORS.text,
   },
   headerRight: {
     width: 40,
   },
-  scrollView: {
-    flex: 1,
+  menuButton: {
+    marginRight: 12,
+    padding: 8,
+  },
+  menuIcon: {
+    color: COLORS.text,
+    fontSize: 20,
   },
   scrollContent: {
     paddingBottom: 100,
   },
   scrollContentDesktop: {
-    paddingBottom: 120,
-    maxWidth: 800,
     alignSelf: 'center',
+    maxWidth: 800,
+    paddingBottom: 120,
     width: '100%',
   },
-  content: {
+  scrollView: {
     flex: 1,
-    padding: 20,
   },
   subtitle: {
     color: COLORS.textSecondary,
     fontSize: 16,
     marginBottom: 32,
-  },
-  form: {
-    gap: 20,
-  },
-  buttonContainer: {
-    marginTop: 8,
   },
 });

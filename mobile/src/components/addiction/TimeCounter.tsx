@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { COLORS } from '@/constants/colors';
+import { FONTS } from '@/constants/fonts';
 import type { ElapsedTimeBreakdown } from '@/utils/date';
 
 interface TimeCounterProps {
@@ -20,12 +21,12 @@ interface ProgressBarProps {
 
 function ProgressBar({ label, value, current, max, color, index, isDesktop }: ProgressBarProps) {
   const progress = Math.min(current / max, 1); // Ensure progress is between 0 and 1
-  
+
   // At 0% progress: bar starts at 0% and is 50% wide (covers 0%-50%)
   // At 100% progress: bar starts at 0% and is 100% wide (covers 0%-100%)
   // Bar always starts from left (0%) and grows to the right
   const barLeft = 0; // Always starts from the left
-  const barWidth = 50 + (progress * 50); // Minimum 50%, grows to 100% at 100% progress
+  const barWidth = 50 + progress * 50; // Minimum 50%, grows to 100% at 100% progress
 
   // Darker background color for unfilled portion
   const getDarkerColor = (hexColor: string): string => {
@@ -44,12 +45,7 @@ function ProgressBar({ label, value, current, max, color, index, isDesktop }: Pr
   const displayText = `${value} ${label}`;
 
   return (
-      <View
-        style={[
-          styles.progressBarContainer,
-          isDesktop && styles.progressBarContainerDesktop,
-        ]}
-      >
+    <View style={[styles.progressBarContainer, isDesktop && styles.progressBarContainerDesktop]}>
       <View style={[styles.progressBarWrapper, isDesktop && styles.progressBarWrapperDesktop]}>
         {/* Background (unfilled portion) */}
         <View
@@ -74,7 +70,7 @@ function ProgressBar({ label, value, current, max, color, index, isDesktop }: Pr
           ]}
         >
           <View style={styles.progressBarContent}>
-            <Text 
+            <Text
               selectable={false}
               style={[styles.progressBarText, isDesktop && styles.progressBarTextDesktop]}
             >
@@ -137,10 +133,7 @@ export function TimeCounter({ breakdown, addictionName }: TimeCounterProps) {
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-      <Text 
-        selectable={false}
-        style={[styles.title, isDesktop && styles.titleDesktop]}
-      >
+      <Text selectable={false} style={[styles.title, isDesktop && styles.titleDesktop]}>
         {titleText}
       </Text>
       <View style={[styles.timeUnitsContainer, isDesktop && styles.timeUnitsContainerDesktop]}>
@@ -172,94 +165,13 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     width: '100%',
   },
-  title: {
-    fontSize: 18,
-    color: COLORS.text,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  titleDesktop: {
-    fontSize: 22,
-    marginBottom: 32,
-  },
-  timeUnitsContainer: {
-    width: '100%',
-    marginTop: 20,
-  },
-  timeUnitsContainerDesktop: {
-    marginTop: 0,
-  },
-  progressBarContainer: {
-    width: '100%',
-    marginBottom: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
-  progressBarContainerDesktop: {
-    width: '100%',
-    marginBottom: 12,
-    paddingHorizontal: 0,
-    alignItems: 'center',
-  },
-  progressBarWrapper: {
-    width: '100%',
-    maxWidth: 600,
-    height: 60,
-    position: 'relative',
-    overflow: 'hidden',
-    alignSelf: 'center',
-  },
-  progressBarWrapperDesktop: {
-    height: 90,
-  },
-  progressBarBackground: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    right: 0,
-    width: '100%',
-    height: '100%',
-    borderTopLeftRadius: 14,
-    borderBottomLeftRadius: 14,
-  },
-  progressBarBackgroundDesktop: {
-    borderTopLeftRadius: 20,
-    borderBottomLeftRadius: 20,
-  },
-  progressBar: {
-    height: '100%',
-    paddingLeft: 16,
-    paddingRight: 40,
-    justifyContent: 'center',
-    position: 'absolute',
-    overflow: 'visible',
-    minWidth: 100,
-  },
-  progressBarDesktop: {
-    paddingLeft: 28,
-    paddingRight: 54,
-  },
-  progressBarContent: {
-    zIndex: 2,
-  },
-  progressBarText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.surface,
-    fontStyle: 'italic',
-    letterSpacing: 0.5,
-  },
-  progressBarTextDesktop: {
-    fontSize: 36,
-  },
   diagonalCut: {
+    bottom: 0,
+    overflow: 'visible',
     position: 'absolute',
     right: -30,
     top: 0,
-    bottom: 0,
     width: 60,
-    overflow: 'visible',
     zIndex: 10,
   },
   diagonalCutInner: {
@@ -271,5 +183,86 @@ const styles = StyleSheet.create({
     height: '100%',
     // @ts-expect-error - React Native accepts number for skewX, TypeScript types are incorrect
     transform: [{ skewX: -18 }],
+  },
+  progressBar: {
+    height: '100%',
+    justifyContent: 'center',
+    minWidth: 100,
+    overflow: 'visible',
+    paddingLeft: 16,
+    paddingRight: 40,
+    position: 'absolute',
+  },
+  progressBarBackground: {
+    borderBottomLeftRadius: 14,
+    borderTopLeftRadius: 14,
+    bottom: 0,
+    height: '100%',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: '100%',
+  },
+  progressBarBackgroundDesktop: {
+    borderBottomLeftRadius: 20,
+    borderTopLeftRadius: 20,
+  },
+  progressBarContainer: {
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 16,
+    width: '100%',
+  },
+  progressBarContainerDesktop: {
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 0,
+    width: '100%',
+  },
+  progressBarContent: {
+    zIndex: 2,
+  },
+  progressBarDesktop: {
+    paddingLeft: 28,
+    paddingRight: 54,
+  },
+  progressBarText: {
+    color: COLORS.surface,
+    fontFamily: FONTS.bold,
+    fontSize: 24,
+    fontStyle: 'italic',
+    letterSpacing: 0.5,
+  },
+  progressBarTextDesktop: {
+    fontSize: 36,
+  },
+  progressBarWrapper: {
+    alignSelf: 'center',
+    height: 60,
+    maxWidth: 600,
+    overflow: 'hidden',
+    position: 'relative',
+    width: '100%',
+  },
+  progressBarWrapperDesktop: {
+    height: 90,
+  },
+  timeUnitsContainer: {
+    marginTop: 20,
+    width: '100%',
+  },
+  timeUnitsContainerDesktop: {
+    marginTop: 0,
+  },
+  title: {
+    color: COLORS.text,
+    fontSize: 18,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  titleDesktop: {
+    fontSize: 22,
+    marginBottom: 32,
   },
 });

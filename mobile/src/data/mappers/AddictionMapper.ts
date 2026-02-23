@@ -94,9 +94,7 @@ export function rowToDomain(row: AddictionRow): Addiction {
   const createdAt = timestampToDate(row.created_at);
 
   // If last_reset_at is null, use createdAt (new addiction, no resets yet)
-  const lastResetAt = row.last_reset_at
-    ? timestampToDate(row.last_reset_at)
-    : createdAt;
+  const lastResetAt = row.last_reset_at ? timestampToDate(row.last_reset_at) : createdAt;
 
   return {
     id: row.id,
